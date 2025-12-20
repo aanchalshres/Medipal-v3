@@ -12,9 +12,9 @@ dotenv.config();
 
 const JWT_SECRET = process.env.JWT_SECRET as string;
 
-// Utility function to handle file paths
-const getFileUrl = (req: Request, filename: string) => {
-  return `${req.protocol}://${req.get('host')}/uploads/${filename}`;
+// Utility function to handle file paths (Cloudinary returns full URL in 'path')
+const getFileUrl = (file: Express.Multer.File) => {
+  return file.path; // Cloudinary stores the full URL in the path property
 };
 
 // Register a new doctor
@@ -62,21 +62,21 @@ export const registerDoctor = async (req: Request, res: Response) => {
       verificationStatus: 'Pending'
     };
 
-    // Handle file uploads
+    // Handle file uploads (Cloudinary)
     if (req.files) {
       const files = req.files as { [fieldname: string]: Express.Multer.File[] };
       
       if (files['licenseDocument']) {
-        doctorData.licenseDocument = getFileUrl(req, files['licenseDocument'][0].filename);
+        doctorData.licenseDocument = getFileUrl(files['licenseDocument'][0]);
       }
       if (files['degreeDocument']) {
-        doctorData.degreeDocument = getFileUrl(req, files['degreeDocument'][0].filename);
+        doctorData.degreeDocument = getFileUrl(files['degreeDocument'][0]);
       }
       if (files['citizenshipDocument']) {
-        doctorData.citizenshipDocument = getFileUrl(req, files['citizenshipDocument'][0].filename);
+        doctorData.citizenshipDocument = getFileUrl(files['citizenshipDocument'][0]);
       }
       if (files['profilePhoto']) {
-        doctorData.profilePhoto = getFileUrl(req, files['profilePhoto'][0].filename);
+        doctorData.profilePhoto = getFileUrl(files['profilePhoto'][0]);
       }
     }
 
@@ -101,18 +101,9 @@ export const registerDoctor = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error registering doctor:', error);
     
-    // Clean up uploaded files if error occurs
-    if (req.files) {
-      const files = req.files as { [fieldname: string]: Express.Multer.File[] };
-      Object.values(files).forEach(fileArray => {
-        fileArray.forEach(file => {
-          const filePath = path.join('uploads', file.filename);
-          if (fs.existsSync(filePath)) {
-            fs.unlinkSync(filePath);
-          }
-        });
-      });
-    }
+    // Note: Cloudinary handles file storage automatically
+    // Files uploaded to Cloudinary remain there even if registration fails
+    // To delete from Cloudinary on error, implement cloudinary.uploader.destroy()
 
     res.status(500).json({ 
       success: false, 

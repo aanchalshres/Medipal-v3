@@ -62,7 +62,8 @@ mongoose.connect(process.env.MONGO_URI as string)
     console.log('✅ MongoDB connected');
     app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
-      console.log(`📁 Upload directory: ${UPLOAD_DIR}`);
+      console.log(`☁️  File storage: Cloudinary (${process.env.CLOUDINARY_CLOUD_NAME || 'not configured'})`);
+      console.log(`📁 Fallback local directory: ${UPLOAD_DIR}`);
     });
   })
   .catch((err) => {

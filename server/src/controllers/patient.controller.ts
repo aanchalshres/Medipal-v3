@@ -8,22 +8,15 @@ const handleFileUpload = (req: Request, fieldName: string) => {
   if (!req.files) return undefined;
   
   const files = req.files as { [fieldname: string]: Express.Multer.File[] };
-  return files[fieldName]?.[0]?.filename;
+  // For Cloudinary, use 'path' which contains the full URL
+  return files[fieldName]?.[0]?.path || files[fieldName]?.[0]?.filename;
 };
 
 const cleanupFiles = (files: string[]) => {
-  files.forEach(file => {
-    if (file) {
-      try {
-        const filePath = path.join(process.env.UPLOAD_DIR as string, file);
-        if (fs.existsSync(filePath)) {
-          fs.unlinkSync(filePath);
-        }
-      } catch (err) {
-        console.error(`Error deleting file ${file}:`, err);
-      }
-    }
-  });
+  // Note: Cloudinary handles file cleanup automatically
+  // If you need to delete from Cloudinary on error, implement cloudinary.uploader.destroy()
+  // For now, files remain in cloud storage even on registration errors
+  console.log('Files uploaded to Cloudinary:', files);
 };
 
 export const registerPatient = async (req: Request, res: Response) => {
@@ -133,16 +126,16 @@ export const registerPatient = async (req: Request, res: Response) => {
 
     // More specific error messages
     let errorMessage = 'Failed to register patient. Please try again.';
-    // if (error.name === 'ValidationError') {
-    //   errorMessage = 'Validation failed: ' + Object.values(error.errors).map((e: any) => e.message).join(', ');
-    // } else if (error.code === 11000) {
-    //   errorMessage = 'Email already exists. Please use a different email.';
-    // }
+    if (error.name === 'ValidationError') {
+      errorMessage = 'Validation failed: ' + Object.values(error.errors).map((e: any) => e.message).join(', ');
+    } else if (error.code === 11000) {
+      errorMessage = 'Email already exists. Please use a different email.';
+    }
 
     res.status(statusCode).json({
       success: false,
       message: errorMessage,
-      ...(process.env.NODE_ENV === 'development' && { error: error.message })
+      ...(process.env.NODE_ENV === 'development' && { error: error.message, details: error })
     });
   }
 };
