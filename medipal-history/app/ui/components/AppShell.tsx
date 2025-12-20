@@ -8,8 +8,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   // Hide navbar on these routes
-  const hideNavbarRoutes = ['/', '/patient/dashboard'];
-  const shouldHideNavbar = hideNavbarRoutes.includes(pathname || '');
+  const hideNavbarRoutes = ['/', '/patient/dashboard', '/auth/login', '/auth/register', '/auth/doctor-register'];
+  const shouldHideNavbar = hideNavbarRoutes.some(route => pathname?.startsWith(route));
 
   return (
     <div className="min-h-screen flex flex-col">

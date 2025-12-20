@@ -26,10 +26,12 @@ export const registerPatient = async (req: Request, res: Response) => {
 
   try {
     // Debug: Log incoming request
-    console.log('Request body:', JSON.stringify(req.body, null, 2));
-    if (req.files) {
-      console.log('Uploaded files:', Object.keys(req.files));
-    }
+    const logMessage = `\n=== PATIENT REGISTRATION REQUEST ===\nRequest body fields: ${Object.keys(req.body).join(', ')}\nRequest files: ${req.files ? Object.keys(req.files).join(', ') : 'No files'}\n`;
+    console.log(logMessage);
+    fs.appendFileSync(path.join(__dirname, '../../debug.log'), logMessage + '\n');
+    console.log('Request body fields:', Object.keys(req.body));
+    console.log('Request files:', req.files ? Object.keys(req.files) : 'No files');
+    console.log('Body data:', JSON.stringify(req.body, null, 2));
 
     // Handle file uploads
     citizenshipDocument = handleFileUpload(req, 'citizenshipDocument');
@@ -60,10 +62,16 @@ export const registerPatient = async (req: Request, res: Response) => {
     }
 
     // Validate required fields
-    const requiredFields = ['password', 'email', 'fullName', 'dateOfBirth'];
+    const requiredFields = [
+      'fullName', 'email', 'password', 'phone', 'gender', 'dateOfBirth', 
+      'bloodGroup', 'height', 'weight', 'emergencyContactName', 
+      'emergencyContactPhone', 'emergencyContactRelation', 'address', 
+      'city', 'country', 'citizenshipNumber', 'citizenshipIssuedDistrict'
+    ];
     const missingFields = requiredFields.filter(field => !req.body[field]);
     
     if (missingFields.length > 0) {
+      console.error('Missing required fields:', missingFields);
       cleanupFiles([citizenshipDocument, profilePhoto, insuranceCard].filter(Boolean) as string[]);
       return res.status(400).json({
         success: false,
@@ -75,17 +83,49 @@ export const registerPatient = async (req: Request, res: Response) => {
     // Hash password
     const hashedPassword = await bcrypt.hash(req.body.password, 10);
 
-    // Prepare patient data
+    // Helper function to parse array fields
+    const parseArrayField = (field: any): string[] => {
+      if (!field) return [];
+      if (Array.isArray(field)) return field;
+      if (typeof field === 'string') {
+        try {
+          // Try to parse as JSON first
+          const parsed = JSON.parse(field);
+          return Array.isArray(parsed) ? parsed : [];
+        } catch {
+          // If not JSON, split by comma
+          return field.split(',').map((item: string) => item.trim()).filter(Boolean);
+        }
+      }
+      return [];
+    };
+
+    // Prepare patient data with proper type conversion
     const patientData = {
-      ...req.body,
+      fullName: req.body.fullName?.trim(),
+      email: req.body.email?.trim().toLowerCase(),
       password: hashedPassword,
+      phone: req.body.phone?.trim(),
+      gender: req.body.gender,
+      dateOfBirth: new Date(req.body.dateOfBirth),
+      bloodGroup: req.body.bloodGroup,
+      height: parseFloat(req.body.height),
+      weight: parseFloat(req.body.weight),
+      allergies: parseArrayField(req.body.allergies),
+      currentMedications: parseArrayField(req.body.currentMedications),
+      chronicConditions: parseArrayField(req.body.chronicConditions),
+      emergencyContactName: req.body.emergencyContactName?.trim(),
+      emergencyContactPhone: req.body.emergencyContactPhone?.trim(),
+      emergencyContactRelation: req.body.emergencyContactRelation,
+      address: req.body.address?.trim(),
+      city: req.body.city?.trim(),
+      country: req.body.country?.trim(),
+      postalCode: req.body.postalCode?.trim() || '',
+      citizenshipNumber: req.body.citizenshipNumber?.trim(),
+      citizenshipIssuedDistrict: req.body.citizenshipIssuedDistrict?.trim(),
       citizenshipDocument,
       profilePhoto,
-      insuranceCard: insuranceCard || undefined,
-      allergies: req.body.allergies ? req.body.allergies.split(',').map((a: string) => a.trim()) : [],
-      currentMedications: req.body.currentMedications ? req.body.currentMedications.split(',').map((m: string) => m.trim()) : [],
-      chronicConditions: req.body.chronicConditions ? req.body.chronicConditions.split(',').map((c: string) => c.trim()) : [],
-      dateOfBirth: new Date(req.body.dateOfBirth)
+      insuranceCard: insuranceCard || undefined
     };
 
     // Debug: Log patient data before saving

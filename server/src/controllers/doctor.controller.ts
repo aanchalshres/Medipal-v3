@@ -36,6 +36,23 @@ export const registerDoctor = async (req: Request, res: Response) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(req.body.password, salt);
 
+    // Helper function to parse array fields
+    const parseArrayField = (field: any): string[] => {
+      if (!field) return [];
+      if (Array.isArray(field)) return field;
+      if (typeof field === 'string') {
+        try {
+          // Try to parse as JSON first
+          const parsed = JSON.parse(field);
+          return Array.isArray(parsed) ? parsed : [];
+        } catch {
+          // If not JSON, split by comma
+          return field.split(',').map((item: string) => item.trim()).filter(Boolean);
+        }
+      }
+      return [];
+    };
+
     // Create new doctor
     const doctorData: Partial<IDoctor> = {
       fullName: req.body.fullName,
@@ -45,13 +62,13 @@ export const registerDoctor = async (req: Request, res: Response) => {
       gender: req.body.gender,
       dateOfBirth: new Date(req.body.dateOfBirth),
       licenseNumber: req.body.licenseNumber,
-      specialization: req.body.specialization,
+      specialization: parseArrayField(req.body.specialization),
       yearsOfExperience: parseInt(req.body.yearsOfExperience),
       hospital: req.body.hospital,
       qualifications: req.body.qualifications,
-      availableDays: req.body.availableDays,
+      availableDays: parseArrayField(req.body.availableDays),
       consultationFee: parseFloat(req.body.consultationFee),
-      paymentMethods: req.body.paymentMethods,
+      paymentMethods: parseArrayField(req.body.paymentMethods),
       address: req.body.address,
       city: req.body.city,
       country: req.body.country,
