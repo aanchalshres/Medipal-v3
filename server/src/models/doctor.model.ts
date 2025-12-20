@@ -63,9 +63,7 @@ const doctorSchema = new Schema<IDoctor>({
   timestamps: true
 });
 
-// Add indexes for frequently queried fields
-doctorSchema.index({ email: 1 });
-doctorSchema.index({ licenseNumber: 1 });
+// Add indexes for frequently queried fields (email and licenseNumber already indexed via unique: true)
 doctorSchema.index({ specialization: 1 });
 doctorSchema.index({ city: 1 });
 doctorSchema.index({ country: 1 });

@@ -1,11 +1,13 @@
 // src/routes/doctor.routes.ts
 import express from 'express';
 import { registerDoctor } from '../controllers/doctor.controller';
-import upload from '../config/multer';
+// import upload from '../config/multer'; // Local storage
+import { uploadCloud as upload } from '../config/cloudinary'; // Cloud storage
+import { authenticate } from '../config/jwt';
 
 const router = express.Router();
 
-// Doctor registration route with file uploads
+// Public route - doctor registration
 router.post('/register', 
   upload.fields([
     { name: 'profilePhoto', maxCount: 1 },
@@ -15,5 +17,22 @@ router.post('/register',
   ]),
   registerDoctor
 );
-// Get doctor documents route
+
+// Protected routes - require JWT authentication
+router.get('/profile', authenticate, (req, res) => {
+  res.json({ 
+    success: true, 
+    user: req.user,
+    message: 'Doctor profile accessed successfully' 
+  });
+});
+
+router.get('/dashboard', authenticate, (req, res) => {
+  res.json({ 
+    success: true, 
+    user: req.user,
+    message: 'Doctor dashboard data' 
+  });
+});
+
 export default router;
