@@ -1,6 +1,6 @@
 // src/routes/doctor.routes.ts
 import express from 'express';
-import { registerDoctor } from '../controllers/doctor.controller';
+import { registerDoctor, getDoctorProfile, updateDoctorProfile } from '../controllers/doctor.controller';
 // import upload from '../config/multer'; // Local storage
 import { uploadCloud as upload } from '../config/cloudinary'; // Cloud storage
 import { authenticate } from '../config/jwt';
@@ -19,13 +19,9 @@ router.post('/register',
 );
 
 // Protected routes - require JWT authentication
-router.get('/profile', authenticate, (req, res) => {
-  res.json({ 
-    success: true, 
-    user: req.user,
-    message: 'Doctor profile accessed successfully' 
-  });
-});
+router.get('/profile', authenticate, getDoctorProfile);
+
+router.put('/profile', authenticate, updateDoctorProfile);
 
 router.get('/dashboard', authenticate, (req, res) => {
   res.json({ 

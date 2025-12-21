@@ -1,5 +1,5 @@
 import express from 'express';
-import { registerPatient } from '../controllers/patient.controller';
+import { registerPatient, getPatientProfile, updatePatientProfile } from '../controllers/patient.controller';
 // import upload from '../config/multer'; // Local storage
 import { uploadCloud as upload } from '../config/cloudinary'; // Cloud storage
 import { authenticate } from '../config/jwt';
@@ -42,13 +42,9 @@ router.post('/register',
 );
 
 // Protected routes - require JWT authentication
-router.get('/profile', authenticate, (req, res) => {
-  res.json({ 
-    success: true, 
-    user: req.user,
-    message: 'Patient profile accessed successfully' 
-  });
-});
+router.get('/profile', authenticate, getPatientProfile);
+
+router.put('/profile', authenticate, updatePatientProfile);
 
 router.get('/dashboard', authenticate, (req, res) => {
   res.json({ 

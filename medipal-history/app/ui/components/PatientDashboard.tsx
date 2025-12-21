@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { 
   Card, 
   CardContent, 
@@ -8,7 +8,8 @@ import {
   Avatar,
   Box,
   Dialog,
-  DialogContent
+  DialogContent,
+  Fade
 } from "@mui/material";
 import { 
   AccountCircle, 
@@ -212,10 +213,44 @@ const DigitalHealthCard = ({
 
 export default function PatientDashboard() {
   const [cardOpen, setCardOpen] = useState(false);
+  const [displayName, setDisplayName] = useState<string>("");
   const today = format(new Date(), "EEEE, MMMM dd, yyyy");
 
+  // Rotate 4-5 health tips with simple fade transition
+  const tips = [
+    "Stay hydrated throughout the day.",
+    "Aim for 7–8 hours of sleep.",
+    "Take short walks to stay active.",
+    "Include fruits and veggies in meals.",
+    "Practice deep breathing to reduce stress."
+  ];
+  const [tipIndex, setTipIndex] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTipIndex((i) => (i + 1) % tips.length), 4000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Fetch logged-in patient profile for greeting
+  useEffect(() => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    const role = typeof window !== 'undefined' ? localStorage.getItem('role') : null;
+    if (!token || role !== 'patient') return;
+    fetch('http://localhost:5000/api/patients/profile', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data?.success && data?.user?.fullName) {
+        const full: string = data.user.fullName as string;
+        const first = full.trim().split(/\s+/)[0];
+        setDisplayName(first || 'Patient');
+      }
+    })
+    .catch(() => {});
+  }, []);
+
   const patient: Patient = {
-    name: "Ankita Shrestha",
+    name: displayName || "Patient",
     id: "123-456-7890",
     dob: "1995/05/15",
     age: 28,
@@ -250,18 +285,20 @@ export default function PatientDashboard() {
 
       {/* Welcome Message */}
       <Typography variant="h6" sx={{ fontWeight: "bold", mb: 3, color: colors.primary }}>
-        Welcome, {patient.name}
+        Hey {patient.name}, how are you feeling today?
       </Typography>
 
       {/* Health Tips */}
       <SectionCard title="Health Tips">
-        <div className="flex items-center">
+        <div className="flex items-center min-h-[48px]">
           <div className="w-12 h-12 bg-[#19eac0] rounded flex items-center justify-center text-white mr-4">
             💡
           </div>
-          <Typography variant="body1">
-            Drink at least 8 glasses of water daily to stay hydrated and healthy.
-          </Typography>
+          <Fade in key={tipIndex} timeout={500}>
+            <Typography variant="body1">
+              {tips[tipIndex]}
+            </Typography>
+          </Fade>
         </div>
       </SectionCard>
 

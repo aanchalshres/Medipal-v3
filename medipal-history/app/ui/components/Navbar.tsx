@@ -13,6 +13,8 @@ import { ThemeProvider as MuiThemeProvider, createTheme } from "@mui/material";
 export function Navbar() {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [registerAnchorEl, setRegisterAnchorEl] = useState<null | HTMLElement>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [role, setRole] = useState<string | null>(null);
 
   // Handle register menu open
   const handleRegisterOpen = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -24,11 +26,17 @@ export function Navbar() {
     setRegisterAnchorEl(null);
   };
 
-  // Initialize theme
+  // Initialize theme and auth state
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     setTheme(savedTheme || (prefersDark ? 'dark' : 'light'));
+    
+    // Check authentication
+    const token = localStorage.getItem('token');
+    const userRole = localStorage.getItem('role');
+    setIsLoggedIn(!!token);
+    setRole(userRole);
   }, []);
 
   // Apply theme changes
@@ -84,7 +92,10 @@ export function Navbar() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
             {/* Logo on the left */}
             <div className="flex items-center">
-              <Link href="/" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
+              <Link 
+                href={isLoggedIn ? (role === 'doctor' ? '/doctor/dashboard' : '/patient/dashboard') : '/'} 
+                className="flex items-center space-x-2 hover:opacity-80 transition-opacity"
+              >
                 <img 
                   src="/images/logo.png" 
                   alt="MediPortal Logo"
@@ -93,7 +104,8 @@ export function Navbar() {
               </Link>
             </div>
 
-            {/* Register button on the right */}
+            {/* Register button on the right - Only show when not logged in */}
+            {!isLoggedIn && (
             <div className="flex items-center">
               <Button 
                 variant="outlined"
@@ -152,6 +164,7 @@ export function Navbar() {
                 </MenuItem>
               </MuiMenu>
             </div>
+            )}
           </div>
         </div>
       </header>

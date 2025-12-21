@@ -81,13 +81,22 @@ export function MedicalNavbar() {
   const [theme, setTheme] = useState<'light' | 'dark' | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [role, setRole] = useState<string | null>(null);
 
   // Initialize theme and notifications after mount (client only)
   useEffect(() => {
     const savedTheme = typeof window !== 'undefined' ? (localStorage.getItem('theme') as 'light' | 'dark' | null) : null;
-    const prefersDark = typeof window !== 'undefined' ? window.matchMedia('(prefers-color-scheme: dark)').matches : false;
-    setTheme(savedTheme || (prefersDark ? 'dark' : 'light'));
+    // Force light mode by default
+    setTheme(savedTheme || 'light');
     setUnreadCount(notifications.filter(n => !n.read).length);
+    
+    // Check if user is logged in
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    const userRole = typeof window !== 'undefined' ? localStorage.getItem('role') : null;
+    setIsLoggedIn(!!token);
+    setRole(userRole);
+    
     setMounted(true);
   }, []);
 
@@ -226,11 +235,7 @@ export function MedicalNavbar() {
   return (
     <MuiThemeProvider theme={muiTheme}>
       <header 
-        className={`sticky top-0 z-50 w-full border-b backdrop-blur supports-[backdrop-filter]:bg-background/60 ${
-          theme === "dark" 
-            ? "bg-[#121212] border-[#424242]" 
-            : "bg-[#FFFFFF] border-[#E2E8F0]"
-        }`}
+        className="sticky top-0 z-50 w-full border-b bg-white border-gray-200"
       >
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           {/* Mobile menu button and logo */}
@@ -244,7 +249,10 @@ export function MedicalNavbar() {
             >
               <MenuIcon />
             </IconButton>
-            <Link href="/" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
+            <Link 
+              href={isLoggedIn ? (role === 'doctor' ? '/doctor/dashboard' : '/patient/dashboard') : '/'} 
+              className="flex items-center space-x-2 hover:opacity-80 transition-opacity"
+            >
               <img 
                 src="/images/logo.png" 
                 alt="MediPortal Logo"
@@ -346,8 +354,62 @@ export function MedicalNavbar() {
   </MuiMenu>
 </>
 
-            {/* User Menu */}
-            
+            {/* User Menu - Only show when logged in */}
+            {isLoggedIn && (
+              <>
+                <IconButton
+                  color="inherit"
+                  onClick={handleMenuOpen}
+                  size="small"
+                >
+                  <Avatar
+                    sx={{
+                      width: 36,
+                      height: 36,
+                      bgcolor: '#2A7F62',
+                      fontSize: '0.875rem'
+                    }}
+                  >
+                    <User className="h-5 w-5" />
+                  </Avatar>
+                </IconButton>
+
+                <MuiMenu
+                  anchorEl={anchorEl}
+                  open={Boolean(anchorEl)}
+                  onClose={handleMenuClose}
+                  PaperProps={{
+                    sx: {
+                      mt: 1.5,
+                      minWidth: 200,
+                      backgroundColor: theme === "dark" ? "#1E1E1E" : "#FFFFFF",
+                    }
+                  }}
+                >
+                  <MenuItem
+                    component={Link}
+                    href="/profile-account"
+                    onClick={handleMenuClose}
+                  >
+                    <User className="h-4 w-4 mr-2" />
+                    Profile
+                  </MenuItem>
+                  <Divider />
+                  <MenuItem
+                    onClick={() => {
+                      localStorage.removeItem('token');
+                      setIsLoggedIn(false);
+                      handleMenuClose();
+                      window.location.href = '/auth/login';
+                    }}
+                    sx={{ color: 'error.main' }}
+                  >
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Logout
+                  </MenuItem>
+                </MuiMenu>
+              </>
+            )}
           </div>
 
           {/* Notification Menu */}

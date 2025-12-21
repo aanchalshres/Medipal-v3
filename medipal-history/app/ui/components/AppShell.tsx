@@ -7,9 +7,8 @@ import { Footer } from './Footer';
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
-  // Hide navbar on these routes
-  const hideNavbarRoutes = ['/', '/patient/dashboard', '/auth/login', '/auth/register', '/auth/doctor-register'];
-  const shouldHideNavbar = hideNavbarRoutes.some(route => pathname?.startsWith(route));
+  // Hide navbar only on home page and auth routes
+  const shouldHideNavbar = pathname === '/' || pathname?.startsWith('/auth/');
 
   return (
     <div className="min-h-screen flex flex-col">

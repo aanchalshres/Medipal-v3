@@ -179,3 +179,145 @@ export const registerPatient = async (req: Request, res: Response) => {
     });
   }
 };
+
+// Get logged-in patient profile with frontend-friendly shape
+export const getPatientProfile = async (req: Request, res: Response) => {
+  try {
+    const user = req.user;
+    if (!user?.id) {
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+
+    const patient = await Patient.findById(user.id).select('-password');
+    if (!patient) {
+      return res.status(404).json({ success: false, message: 'Patient not found' });
+    }
+
+    const data = {
+      id: patient._id,
+      fullName: patient.fullName,
+      email: patient.email,
+      phone: patient.phone,
+      gender: patient.gender,
+      dateOfBirth: patient.dateOfBirth,
+      bloodGroup: patient.bloodGroup,
+      height: patient.height,
+      weight: patient.weight,
+      allergies: patient.allergies || [],
+      medications: patient.currentMedications || [],
+      chronicConditions: patient.chronicConditions || [],
+      emergencyContact: {
+        name: patient.emergencyContactName,
+        phone: patient.emergencyContactPhone,
+        relation: patient.emergencyContactRelation,
+      },
+      address: patient.address,
+      city: patient.city,
+      country: patient.country,
+      postalCode: patient.postalCode,
+      citizenshipNumber: patient.citizenshipNumber,
+      citizenshipIssuedDistrict: patient.citizenshipIssuedDistrict,
+      profilePhoto: patient.profilePhoto,
+      citizenshipDocument: patient.citizenshipDocument,
+      insuranceCard: patient.insuranceCard,
+      createdAt: (patient as any).createdAt,
+      updatedAt: (patient as any).updatedAt,
+      role: 'patient',
+    };
+
+    return res.json({ success: true, user: data });
+  } catch (error) {
+    console.error('Error fetching patient profile:', error);
+    return res.status(500).json({ success: false, message: 'Failed to fetch profile' });
+  }
+};
+
+// Update logged-in patient profile (basic fields, no files)
+export const updatePatientProfile = async (req: Request, res: Response) => {
+  try {
+    const user = req.user;
+    if (!user?.id) {
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+
+    const parseArrayField = (field: any): string[] => {
+      if (!field) return [];
+      if (Array.isArray(field)) return field;
+      if (typeof field === 'string') {
+        try {
+          const parsed = JSON.parse(field);
+          return Array.isArray(parsed) ? parsed : field.split(',').map((x: string) => x.trim()).filter(Boolean);
+        } catch {
+          return field.split(',').map((x: string) => x.trim()).filter(Boolean);
+        }
+      }
+      return [];
+    };
+
+    const allowed: any = {};
+    const body = req.body || {};
+    if (body.fullName !== undefined) allowed.fullName = String(body.fullName).trim();
+    if (body.phone !== undefined) allowed.phone = String(body.phone).trim();
+    if (body.email !== undefined) allowed.email = String(body.email).trim().toLowerCase();
+    if (body.gender !== undefined) allowed.gender = body.gender;
+    if (body.dateOfBirth !== undefined) allowed.dateOfBirth = new Date(body.dateOfBirth);
+    if (body.bloodGroup !== undefined) allowed.bloodGroup = body.bloodGroup;
+    if (body.height !== undefined) allowed.height = parseFloat(body.height);
+    if (body.weight !== undefined) allowed.weight = parseFloat(body.weight);
+    if (body.allergies !== undefined) allowed.allergies = parseArrayField(body.allergies);
+    if (body.medications !== undefined) allowed.currentMedications = parseArrayField(body.medications);
+    if (body.chronicConditions !== undefined) allowed.chronicConditions = parseArrayField(body.chronicConditions);
+    if (body.address !== undefined) allowed.address = String(body.address).trim();
+    if (body.city !== undefined) allowed.city = String(body.city).trim();
+    if (body.country !== undefined) allowed.country = String(body.country).trim();
+    if (body.postalCode !== undefined) allowed.postalCode = String(body.postalCode).trim();
+    if (body.emergencyContact !== undefined) {
+      const ec = body.emergencyContact;
+      if (ec.name !== undefined) allowed.emergencyContactName = String(ec.name).trim();
+      if (ec.phone !== undefined) allowed.emergencyContactPhone = String(ec.phone).trim();
+      if (ec.relation !== undefined) allowed.emergencyContactRelation = String(ec.relation).trim();
+    }
+
+    const updated = await Patient.findByIdAndUpdate(user.id, { $set: allowed }, { new: true }).select('-password');
+    if (!updated) {
+      return res.status(404).json({ success: false, message: 'Patient not found' });
+    }
+
+    const data = {
+      id: updated._id,
+      fullName: updated.fullName,
+      email: updated.email,
+      phone: updated.phone,
+      gender: updated.gender,
+      dateOfBirth: updated.dateOfBirth,
+      bloodGroup: updated.bloodGroup,
+      height: updated.height,
+      weight: updated.weight,
+      allergies: updated.allergies || [],
+      medications: updated.currentMedications || [],
+      chronicConditions: updated.chronicConditions || [],
+      emergencyContact: {
+        name: updated.emergencyContactName,
+        phone: updated.emergencyContactPhone,
+        relation: updated.emergencyContactRelation,
+      },
+      address: updated.address,
+      city: updated.city,
+      country: updated.country,
+      postalCode: updated.postalCode,
+      citizenshipNumber: updated.citizenshipNumber,
+      citizenshipIssuedDistrict: updated.citizenshipIssuedDistrict,
+      profilePhoto: updated.profilePhoto,
+      citizenshipDocument: updated.citizenshipDocument,
+      insuranceCard: updated.insuranceCard,
+      createdAt: (updated as any).createdAt,
+      updatedAt: (updated as any).updatedAt,
+      role: 'patient',
+    };
+
+    return res.json({ success: true, user: data });
+  } catch (error) {
+    console.error('Error updating patient profile:', error);
+    return res.status(500).json({ success: false, message: 'Failed to update profile' });
+  }
+};

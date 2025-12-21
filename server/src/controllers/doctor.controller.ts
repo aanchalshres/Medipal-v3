@@ -276,3 +276,127 @@ export const getPaymentMethods = async (req: Request, res: Response) => {
     });
   }
 };
+
+// Get logged-in doctor profile
+export const getDoctorProfile = async (req: Request, res: Response) => {
+  try {
+    const user = req.user;
+    if (!user?.id) {
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+
+    const doctor = await Doctor.findById(user.id).select('-password');
+    if (!doctor) {
+      return res.status(404).json({ success: false, message: 'Doctor not found' });
+    }
+
+    const data = {
+      id: doctor._id,
+      fullName: doctor.fullName,
+      email: doctor.email,
+      phone: doctor.phone,
+      gender: doctor.gender,
+      dateOfBirth: doctor.dateOfBirth,
+      licenseNumber: doctor.licenseNumber,
+      specialization: doctor.specialization || [],
+      yearsOfExperience: doctor.yearsOfExperience,
+      hospital: doctor.hospital,
+      qualifications: doctor.qualifications,
+      availableDays: doctor.availableDays || [],
+      consultationFee: doctor.consultationFee,
+      paymentMethods: doctor.paymentMethods || [],
+      address: doctor.address,
+      city: doctor.city,
+      country: doctor.country,
+      postalCode: doctor.postalCode,
+      profilePhoto: doctor.profilePhoto,
+      isVerified: doctor.isVerified,
+      verificationStatus: doctor.verificationStatus,
+      createdAt: (doctor as any).createdAt,
+      updatedAt: (doctor as any).updatedAt,
+      role: 'doctor',
+    };
+
+    return res.json({ success: true, user: data });
+  } catch (error) {
+    console.error('Error fetching doctor profile:', error);
+    return res.status(500).json({ success: false, message: 'Failed to fetch profile' });
+  }
+};
+
+// Update logged-in doctor profile (basic fields, no files)
+export const updateDoctorProfile = async (req: Request, res: Response) => {
+  try {
+    const user = req.user;
+    if (!user?.id) {
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+
+    const parseArrayField = (field: any): string[] => {
+      if (!field) return [];
+      if (Array.isArray(field)) return field;
+      if (typeof field === 'string') {
+        try {
+          const parsed = JSON.parse(field);
+          return Array.isArray(parsed) ? parsed : field.split(',').map((x: string) => x.trim()).filter(Boolean);
+        } catch {
+          return field.split(',').map((x: string) => x.trim()).filter(Boolean);
+        }
+      }
+      return [];
+    };
+
+    const allowed: any = {};
+    const body = req.body || {};
+    if (body.fullName !== undefined) allowed.fullName = String(body.fullName).trim();
+    if (body.phone !== undefined) allowed.phone = String(body.phone).trim();
+    if (body.email !== undefined) allowed.email = String(body.email).trim().toLowerCase();
+    if (body.gender !== undefined) allowed.gender = body.gender;
+    if (body.dateOfBirth !== undefined) allowed.dateOfBirth = new Date(body.dateOfBirth);
+    if (body.specialization !== undefined) allowed.specialization = parseArrayField(body.specialization);
+    if (body.yearsOfExperience !== undefined) allowed.yearsOfExperience = parseInt(body.yearsOfExperience, 10);
+    if (body.qualifications !== undefined) allowed.qualifications = String(body.qualifications).trim();
+    if (body.hospital !== undefined) allowed.hospital = String(body.hospital).trim();
+    if (body.address !== undefined) allowed.address = String(body.address).trim();
+    if (body.city !== undefined) allowed.city = String(body.city).trim();
+    if (body.country !== undefined) allowed.country = String(body.country).trim();
+    if (body.postalCode !== undefined) allowed.postalCode = String(body.postalCode).trim();
+    if (body.availableDays !== undefined) allowed.availableDays = parseArrayField(body.availableDays);
+    if (body.consultationFee !== undefined) allowed.consultationFee = parseFloat(body.consultationFee);
+    if (body.paymentMethods !== undefined) allowed.paymentMethods = parseArrayField(body.paymentMethods);
+
+    const updated = await Doctor.findByIdAndUpdate(user.id, { $set: allowed }, { new: true }).select('-password');
+    if (!updated) {
+      return res.status(404).json({ success: false, message: 'Doctor not found' });
+    }
+
+    const data = {
+      id: updated._id,
+      fullName: updated.fullName,
+      email: updated.email,
+      phone: updated.phone,
+      gender: updated.gender,
+      dateOfBirth: updated.dateOfBirth,
+      specialization: updated.specialization,
+      yearsOfExperience: updated.yearsOfExperience,
+      qualifications: updated.qualifications,
+      address: updated.address,
+      city: updated.city,
+      country: updated.country,
+      postalCode: updated.postalCode,
+      availableDays: updated.availableDays || [],
+      paymentMethods: updated.paymentMethods || [],
+      consultationFee: updated.consultationFee,
+      profilePhoto: updated.profilePhoto,
+      licenseDocument: updated.licenseDocument,
+      createdAt: (updated as any).createdAt,
+      updatedAt: (updated as any).updatedAt,
+      role: 'doctor',
+    };
+
+    return res.json({ success: true, user: data });
+  } catch (error) {
+    console.error('Error updating doctor profile:', error);
+    return res.status(500).json({ success: false, message: 'Failed to update profile' });
+  }
+};
