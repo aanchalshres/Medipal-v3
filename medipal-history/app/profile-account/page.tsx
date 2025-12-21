@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   Box,
   Typography,
@@ -9,11 +9,15 @@ import {
   CircularProgress,
   Alert,
   Chip,
-  Button
+  Button,
+  Dialog,
+  DialogContent
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import { User, Phone, Mail, Calendar, MapPin, Heart, Activity, FileText, Edit } from 'lucide-react';
+import { User, Phone, Mail, Calendar, MapPin, Heart, Activity, FileText, Edit, Download, CreditCard } from 'lucide-react';
 import Link from 'next/link';
+import { QRCodeSVG } from 'qrcode.react';
+import html2canvas from 'html2canvas';
 
 const StyledPaper = styled(Paper)(({ theme }) => ({
   backgroundColor: '#FFFFFF',
@@ -43,6 +47,9 @@ const ProfileView = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [role, setRole] = useState<string | null>(null);
+  const [cardOpen, setCardOpen] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -86,6 +93,26 @@ const ProfileView = () => {
 
     fetchProfile();
   }, []);
+
+  const handleDownloadCard = async () => {
+    if (!cardRef.current) return;
+    setDownloading(true);
+    try {
+      const canvas = await html2canvas(cardRef.current, {
+        scale: 2,
+        backgroundColor: '#ffffff',
+        logging: false,
+      });
+      const link = document.createElement('a');
+      link.download = `medipal-health-card-${userData.fullName?.replace(/\s+/g, '-')}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    } catch (err) {
+      console.error('Error generating card:', err);
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -143,22 +170,39 @@ const ProfileView = () => {
               Member since {new Date(userData.createdAt).toLocaleDateString()}
             </Typography>
           </Box>
-          <Button
-            component={Link}
-            href="/profile-account/edit"
-            variant="outlined"
-            startIcon={<Edit className="h-4 w-4" />}
-            sx={{
-              color: '#2A7F62',
-              borderColor: '#2A7F62',
-              '&:hover': {
-                borderColor: '#1E6D54',
-                backgroundColor: '#E8F5E9'
-              }
-            }}
-          >
-            Edit Profile
-          </Button>
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            {role === 'patient' && (
+              <Button
+                onClick={() => setCardOpen(true)}
+                variant="contained"
+                startIcon={<CreditCard className="h-4 w-4" />}
+                sx={{
+                  bgcolor: '#2A7F62',
+                  '&:hover': {
+                    bgcolor: '#1E6D54'
+                  }
+                }}
+              >
+                Generate Digital Card
+              </Button>
+            )}
+            <Button
+              component={Link}
+              href="/profile-account/edit"
+              variant="outlined"
+              startIcon={<Edit className="h-4 w-4" />}
+              sx={{
+                color: '#2A7F62',
+                borderColor: '#2A7F62',
+                '&:hover': {
+                  borderColor: '#1E6D54',
+                  backgroundColor: '#E8F5E9'
+                }
+              }}
+            >
+              Edit Profile
+            </Button>
+          </Box>
         </Box>
 
         <Divider sx={{ my: 3 }} />

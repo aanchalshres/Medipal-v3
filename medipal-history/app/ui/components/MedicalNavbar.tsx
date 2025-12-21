@@ -39,13 +39,21 @@ interface NavItem {
   path: string;
 }
 
-const navigationItems: NavItem[] = [
+const patientNavigationItems: NavItem[] = [
+  { name: "Dashboard", path: "/patient/dashboard" },
   { name: "Medical Records", path: "/medical-records" },
   { name: "Appointments", path: "/appointments" },
   { name: "Prescriptions", path: "/prescriptions" },
   { name: "Vaccination", path: "/vaccination" },
   { name: "Ambulance", path: "/ambulance" },
-  // { name: "Health Analysis", path: "/health-analytics" },
+];
+
+const doctorNavigationItems: NavItem[] = [
+  { name: "Dashboard", path: "/doctor/dashboard" },
+  { name: "My Patients", path: "/doctor/patients" },
+  { name: "Appointments", path: "/doctor/appointments" },
+  { name: "Prescriptions", path: "/doctor/prescriptions" },
+  { name: "Schedule", path: "/doctor/schedule" },
 ];
 
 interface Notification {
@@ -180,6 +188,8 @@ export function MedicalNavbar() {
     },
   });
 
+  const navigationItems = role === 'doctor' ? doctorNavigationItems : patientNavigationItems;
+
   const drawer = (
     <Box 
       sx={{ 
@@ -263,7 +273,7 @@ export function MedicalNavbar() {
 
           {/* Desktop Navigation - Center */}
           <nav className="hidden md:flex items-center space-x-6 lg:space-x-8">
-            {navigationItems.map((item) => (
+            {(role === 'doctor' ? doctorNavigationItems : patientNavigationItems).map((item) => (
               <Link
                 key={item.name}
                 href={item.path}

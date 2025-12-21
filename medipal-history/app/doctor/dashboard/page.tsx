@@ -1,9 +1,5 @@
-//import { Doctor } from '../../ui/components/Doctor';
+import DoctorDashboard from '../../ui/components/DoctorDashboard';
 
 export default function Home() {
-  return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Add your page content here */}
-    </div>
-  );
+  return <DoctorDashboard />;
 }
