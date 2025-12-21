@@ -38,6 +38,7 @@ export const login = async (req: Request, res: Response) => {
     res.status(200).json({
       success: true,
       token,
+      role, // echo back the role used for login to drive client routing
       user: sanitizedUser,
       message: 'Login successful'
     });
