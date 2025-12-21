@@ -183,21 +183,19 @@ const ProfileView = () => {
             </Typography>
           </Box>
           <Box sx={{ display: 'flex', gap: 2 }}>
-            {role === 'patient' && (
-              <Button
-                onClick={handleGenerateCard}
-                variant="contained"
-                startIcon={<CreditCard className="h-4 w-4" />}
-                sx={{
-                  bgcolor: '#2A7F62',
-                  '&:hover': {
-                    bgcolor: '#1E6D54'
-                  }
-                }}
-              >
-                Generate Digital Card
-              </Button>
-            )}
+            <Button
+              onClick={handleGenerateCard}
+              variant="contained"
+              startIcon={<CreditCard className="h-4 w-4" />}
+              sx={{
+                bgcolor: '#2A7F62',
+                '&:hover': {
+                  bgcolor: '#1E6D54'
+                }
+              }}
+            >
+              Generate Digital Card
+            </Button>
             <Button
               component={Link}
               href="/profile-account/edit"
