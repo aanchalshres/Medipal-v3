@@ -10,8 +10,11 @@ import  AppShell  from './ui/components/AppShell'; // 👈 Client wrapper for na
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Patient Care Portal',
+  title: 'MediPal - Patient Care Portal',
   description: 'Medical History System',
+  icons: {
+    icon: '/images/medipal-logo.png',
+  },
 };
 
 export default function RootLayout({

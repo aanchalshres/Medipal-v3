@@ -44,7 +44,11 @@ router.post('/register',
 // Protected routes - require JWT authentication
 router.get('/profile', authenticate, getPatientProfile);
 
-router.put('/profile', authenticate, updatePatientProfile);
+router.put('/profile', 
+  authenticate, 
+  upload.single('profilePhoto'),
+  updatePatientProfile
+);
 
 router.get('/dashboard', authenticate, (req, res) => {
   res.json({ 

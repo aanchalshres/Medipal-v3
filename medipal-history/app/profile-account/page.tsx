@@ -66,6 +66,7 @@ const ProfileView = () => {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
+        setLoading(true);
         const token = localStorage.getItem('token');
         const userRole = localStorage.getItem('role');
         setRole(userRole);
@@ -104,6 +105,18 @@ const ProfileView = () => {
     };
 
     fetchProfile();
+    
+    // Refresh profile when component becomes visible (e.g., after navigation)
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        fetchProfile();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   const handleDownloadCard = async () => {
@@ -354,7 +367,7 @@ const ProfileView = () => {
         )}
       </StyledPaper>
 
-      {/* Digital Health Card Dialog */}
+      {/* Digital Health Card Dialog - Patient */}
       {role === 'patient' && (
         <Dialog
           open={cardOpen}
@@ -493,6 +506,207 @@ const ProfileView = () => {
                           dob: userData.dateOfBirth,
                           bloodGroup: userData.bloodGroup,
                           emergencyContact: userData.emergencyContact?.phone,
+                          issuer: "MediPal Healthcare"
+                        })}
+                        size={140}
+                        level="H"
+                        fgColor="#2f7d6d"
+                      />
+                    </Box>
+                  </Box>
+                </Box>
+              </Box>
+
+              {/* Download Button */}
+              <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mt: 3 }}>
+                <Button
+                  onClick={handleDownloadCard}
+                  variant="contained"
+                  startIcon={downloading ? <CircularProgress size={16} color="inherit" /> : <Download className="h-4 w-4" />}
+                  disabled={downloading}
+                  sx={{
+                    bgcolor: '#2A7F62',
+                    '&:hover': { bgcolor: '#1E6D54' },
+                    px: 4,
+                    py: 1.5
+                  }}
+                >
+                  {downloading ? 'Generating...' : 'Download Card'}
+                </Button>
+                <Button
+                  onClick={() => setCardOpen(false)}
+                  variant="outlined"
+                  sx={{
+                    color: '#2A7F62',
+                    borderColor: '#2A7F62',
+                    '&:hover': {
+                      borderColor: '#1E6D54',
+                      backgroundColor: '#E8F5E9'
+                    },
+                    px: 4,
+                    py: 1.5
+                  }}
+                >
+                  Close
+                </Button>
+              </Box>
+            </Box>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Digital ID Card Dialog - Doctor */}
+      {role === 'doctor' && (
+        <Dialog
+          open={cardOpen}
+          onClose={() => setCardOpen(false)}
+          maxWidth="md"
+          fullWidth
+          PaperProps={{ 
+            style: { 
+              borderRadius: '16px', 
+              overflow: 'visible',
+              backgroundColor: 'transparent',
+              boxShadow: 'none'
+            } 
+          }}
+        >
+          <DialogContent sx={{ p: 0, backgroundColor: 'transparent' }}>
+            <Box sx={{ position: 'relative' }}>
+              {/* Card Container */}
+              <Box
+                ref={cardRef}
+                sx={{
+                  width: '100%',
+                  maxWidth: 800,
+                  aspectRatio: '16/9',
+                  background: 'linear-gradient(135deg, #f0f9f4 0%, #e8f5f0 100%)',
+                  borderRadius: '24px',
+                  p: 4,
+                  position: 'relative',
+                  overflow: 'hidden',
+                  boxShadow: '0 20px 60px rgba(0,0,0,0.15)'
+                }}
+              >
+                {/* Decorative crosses background */}
+                <Box sx={{ position: 'absolute', top: 20, left: 20, opacity: 0.15 }}>
+                  <Box sx={{ width: 40, height: 40, bgcolor: '#c5dbc7', borderRadius: 1 }} />
+                </Box>
+                <Box sx={{ position: 'absolute', top: 40, left: 80, opacity: 0.1 }}>
+                  <Box sx={{ width: 30, height: 30, bgcolor: '#8ec3b0', borderRadius: 1 }} />
+                </Box>
+                <Box sx={{ position: 'absolute', top: 20, right: 20, opacity: 0.15 }}>
+                  <Box sx={{ width: 45, height: 45, bgcolor: '#8ec3b0', borderRadius: 1 }} />
+                </Box>
+                <Box sx={{ position: 'absolute', top: 60, right: 80, opacity: 0.1 }}>
+                  <Box sx={{ width: 35, height: 35, bgcolor: '#c5dbc7', borderRadius: 1 }} />
+                </Box>
+
+                {/* Logo */}
+                <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+                  <img 
+                    src="/images/logo.png" 
+                    alt="MediPal Logo"
+                    style={{ height: '60px', objectFit: 'contain' }}
+                  />
+                </Box>
+
+                {/* Main Content */}
+                <Box sx={{ display: 'flex', gap: 3, mt: 3 }}>
+                  {/* Left: Photo */}
+                  <Box
+                    sx={{
+                      width: 200,
+                      height: 240,
+                      bgcolor: '#2f7d6d',
+                      borderRadius: 2,
+                      flexShrink: 0,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    {userData.profilePhoto ? (
+                      <img 
+                        src={userData.profilePhoto} 
+                        alt="Profile"
+                        style={{ 
+                          width: '100%', 
+                          height: '100%', 
+                          objectFit: 'cover',
+                          borderRadius: '8px'
+                        }}
+                      />
+                    ) : (
+                      <Typography sx={{ color: 'white', fontSize: '4rem' }}>
+                        {userData.fullName?.charAt(0).toUpperCase()}
+                      </Typography>
+                    )}
+                  </Box>
+
+                  {/* Middle: Doctor Info */}
+                  <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 1.2 }}>
+                    <Box>
+                      <Typography sx={{ fontWeight: 'bold', fontSize: '1.3rem', color: '#2f7d6d', mb: 0.5 }}>
+                        Dr. {userData.fullName?.toUpperCase() || ''}
+                      </Typography>
+                    </Box>
+                    <Box>
+                      <Typography sx={{ fontWeight: 'bold', fontSize: '0.85rem', color: '#1a1a1a' }}>
+                        License No. :
+                      </Typography>
+                      <Typography sx={{ fontSize: '1rem', color: '#2f7d6d', fontWeight: 500 }}>
+                        {userData.licenseNumber || 'N/A'}
+                      </Typography>
+                    </Box>
+                    <Box>
+                      <Typography sx={{ fontWeight: 'bold', fontSize: '0.85rem', color: '#1a1a1a' }}>
+                        Contact Number :
+                      </Typography>
+                      <Typography sx={{ fontSize: '1rem', color: '#2f7d6d', fontWeight: 500 }}>
+                        {userData.phone || 'N/A'}
+                      </Typography>
+                    </Box>
+                    <Box>
+                      <Typography sx={{ fontWeight: 'bold', fontSize: '0.85rem', color: '#1a1a1a' }}>
+                        Email :
+                      </Typography>
+                      <Typography sx={{ fontSize: '1rem', color: '#2f7d6d', fontWeight: 500 }}>
+                        {userData.email || 'N/A'}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ 
+                      bgcolor: '#2f7d6d', 
+                      color: 'white', 
+                      px: 2, 
+                      py: 1, 
+                      borderRadius: '20px', 
+                      display: 'inline-block',
+                      mt: 1,
+                      textAlign: 'center'
+                    }}>
+                      <Typography sx={{ fontSize: '0.95rem', fontWeight: 600, letterSpacing: '0.5px' }}>
+                        {userData.specialization?.[0] || 'Medical Specialist'}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ mt: 0.5 }}>
+                      <Typography sx={{ fontSize: '0.85rem', color: '#1a1a1a', fontWeight: 600 }}>
+                        MEDIPAL ID NO : {userData.id || userData.licenseNumber || '123-456-7890'}
+                      </Typography>
+                    </Box>
+                  </Box>
+
+                  {/* Right: QR Code */}
+                  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                    <Box sx={{ bgcolor: 'white', p: 1.5, borderRadius: 2, boxShadow: 1 }}>
+                      <QRCodeSVG
+                        value={JSON.stringify({
+                          id: userData.id || userData.licenseNumber,
+                          name: userData.fullName,
+                          license: userData.licenseNumber,
+                          specialization: userData.specialization?.[0],
+                          hospital: userData.hospital,
+                          phone: userData.phone,
                           issuer: "MediPal Healthcare"
                         })}
                         size={140}

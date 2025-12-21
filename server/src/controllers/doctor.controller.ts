@@ -348,6 +348,12 @@ export const updateDoctorProfile = async (req: Request, res: Response) => {
 
     const allowed: any = {};
     const body = req.body || {};
+    
+    // Handle profile photo upload
+    if (req.file) {
+      allowed.profilePhoto = req.file.path; // Cloudinary URL
+    }
+    
     if (body.fullName !== undefined) allowed.fullName = String(body.fullName).trim();
     if (body.phone !== undefined) allowed.phone = String(body.phone).trim();
     if (body.email !== undefined) allowed.email = String(body.email).trim().toLowerCase();

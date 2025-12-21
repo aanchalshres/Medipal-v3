@@ -99,72 +99,109 @@ export function Navbar() {
                 <img 
                   src="/images/logo.png" 
                   alt="MediPal Logo"
-                  className="h-40 w-40 object-contain" 
+                  className="h-12 w-auto object-contain" 
                 />
               </Link>
             </div>
 
-            {/* Register button on the right - Only show when not logged in */}
-            {!isLoggedIn && (
-            <div className="flex items-center">
-              <Button 
-                variant="outlined"
-                href="/auth/login"
-                sx={{
-                  fontSize: '0.95rem',
-                  color: theme === "dark" ? "#E0E0E0" : "#2D3748",
-                  borderColor: theme === "dark" ? "#424242" : "#E2E8F0",
-                  '&:hover': {
-                    borderColor: theme === "dark" ? "#E0E0E0" : "#2D3748",
-                  }
-                }}
-              >
-                Login
-              </Button>
-              <Button
-                variant="contained"
-                size="small"
-                onClick={handleRegisterOpen}
-                sx={{
-                  backgroundColor: theme === "dark" ? "#2E7D32" : "#2A7F62",
-                  "&:hover": {
-                    backgroundColor: theme === "dark" ? "#1B5E20" : "#1E6D54",
-                  },
-                  minWidth: 100,
-                  padding: '6px 16px',
-                  marginLeft: '12px'
-                }}
-              >
-                Register
-              </Button>
-              
-              <MuiMenu
-                anchorEl={registerAnchorEl}
-                open={Boolean(registerAnchorEl)}
-                onClose={handleRegisterClose}
-                PaperProps={{
-                  sx: {
-                    backgroundColor: theme === "dark" ? "#1E1E1E" : "#F5F9F8",
-                  }
-                }}
-              >
-                <MenuItem 
-                  onClick={handleRegisterClose} 
-                  component={Link} 
-                  href="/auth/register"
-                >
-                  <ListItemText primary="Register as Patient" />
-                </MenuItem>
-                <MenuItem 
-                  onClick={handleRegisterClose} 
-                  component={Link} 
-                  href="/auth/doctor-register"
-                >
-                  <ListItemText primary="Register as Doctor" />
-                </MenuItem>
-              </MuiMenu>
+            {/* Auth buttons on the right */}
+            <div className="flex items-center gap-3">
+              {!isLoggedIn ? (
+                <>
+                  <Button 
+                    variant="outlined"
+                    href="/auth/login"
+                    sx={{
+                      fontSize: '0.95rem',
+                      color: theme === "dark" ? "#E0E0E0" : "#2D3748",
+                      borderColor: theme === "dark" ? "#424242" : "#E2E8F0",
+                      '&:hover': {
+                        borderColor: theme === "dark" ? "#E0E0E0" : "#2D3748",
+                      }
+                    }}
+                  >
+                    Login
+                  </Button>
+                  <Button
+                    variant="contained"
+                    size="small"
+                    onClick={handleRegisterOpen}
+                    sx={{
+                      backgroundColor: theme === "dark" ? "#2E7D32" : "#2A7F62",
+                      "&:hover": {
+                        backgroundColor: theme === "dark" ? "#1B5E20" : "#1E6D54",
+                      },
+                      minWidth: 100,
+                      padding: '6px 16px',
+                    }}
+                  >
+                    Register
+                  </Button>
+                  
+                  <MuiMenu
+                    anchorEl={registerAnchorEl}
+                    open={Boolean(registerAnchorEl)}
+                    onClose={handleRegisterClose}
+                    PaperProps={{
+                      sx: {
+                        backgroundColor: theme === "dark" ? "#1E1E1E" : "#F5F9F8",
+                      }
+                    }}
+                  >
+                    <MenuItem 
+                      onClick={handleRegisterClose} 
+                      component={Link} 
+                      href="/auth/register"
+                    >
+                      <ListItemText primary="Register as Patient" />
+                    </MenuItem>
+                    <MenuItem 
+                      onClick={handleRegisterClose} 
+                      component={Link} 
+                      href="/auth/doctor-register"
+                    >
+                      <ListItemText primary="Register as Doctor" />
+                    </MenuItem>
+                  </MuiMenu>
+                </>
+              ) : (
+                <>
+                  <Button
+                    variant="outlined"
+                    href={role === 'doctor' ? '/doctor/dashboard' : '/patient/dashboard'}
+                    sx={{
+                      fontSize: '0.95rem',
+                      color: theme === "dark" ? "#E0E0E0" : "#2D3748",
+                      borderColor: theme === "dark" ? "#424242" : "#E2E8F0",
+                      '&:hover': {
+                        borderColor: theme === "dark" ? "#E0E0E0" : "#2D3748",
+                      }
+                    }}
+                  >
+                    Dashboard
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    onClick={() => {
+                      localStorage.removeItem('token');
+                      localStorage.removeItem('role');
+                      window.location.href = '/';
+                    }}
+                    sx={{
+                      fontSize: '0.95rem',
+                      color: theme === "dark" ? "#E0E0E0" : "#DC2626",
+                      borderColor: theme === "dark" ? "#424242" : "#DC2626",
+                      '&:hover': {
+                        borderColor: theme === "dark" ? "#EF4444" : "#B91C1C",
+                        backgroundColor: theme === "dark" ? "rgba(239, 68, 68, 0.1)" : "rgba(220, 38, 38, 0.1)",
+                      }
+                    }}
+                  >
+                    Logout
+                  </Button>
+                </>
+              )}
             </div>
-            )}
           </div>
         </div>
       </header>

@@ -1,8 +1,9 @@
 "use client";
 import React, { useEffect, useMemo, useState } from 'react';
-import { Box, Paper, Typography, TextField, MenuItem, Button, CircularProgress, Alert } from '@mui/material';
+import { Box, Paper, Typography, TextField, MenuItem, Button, CircularProgress, Alert, Avatar, IconButton, Divider } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { useRouter } from 'next/navigation';
+import { Camera, ArrowLeft } from 'lucide-react';
 
 const StyledPaper = styled(Paper)(({ theme }) => ({
   backgroundColor: '#FFFFFF',
@@ -59,6 +60,8 @@ const EditProfilePage = () => {
   const [error, setError] = useState('');
   const [patientForm, setPatientForm] = useState<PatientForm | null>(null);
   const [doctorForm, setDoctorForm] = useState<DoctorForm | null>(null);
+  const [profilePhoto, setProfilePhoto] = useState<string>('');
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
 
   useEffect(() => {
     const init = async () => {
@@ -80,6 +83,8 @@ const EditProfilePage = () => {
         });
         const data = await res.json();
         if (!data.success) throw new Error(data.message || 'Failed to load');
+
+        setProfilePhoto(data.user.profilePhoto || '');
 
         if (userRole === 'doctor') {
           const u = data.user;
@@ -135,6 +140,22 @@ const EditProfilePage = () => {
     init();
   }, []);
 
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        setError('Image size should be less than 5MB');
+        return;
+      }
+      setPhotoFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfilePhoto(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const onSave = async () => {
     try {
       setSaving(true);
@@ -144,28 +165,33 @@ const EditProfilePage = () => {
 
       const isDoctor = role === 'doctor';
       const endpoint = isDoctor ? 'http://localhost:5000/api/doctors/profile' : 'http://localhost:5000/api/patients/profile';
+      
+      const formData = new FormData();
       const body = isDoctor ? doctorForm : patientForm;
       if (!body) return;
 
-      // Transform comma-separated strings into arrays for API expectations
-      const payload: any = { ...body };
-      if (!isDoctor) {
-        if ((payload as PatientForm).allergies !== undefined) payload.allergies = String(payload.allergies);
-        if ((payload as PatientForm).medications !== undefined) payload.medications = String(payload.medications);
-        if ((payload as PatientForm).chronicConditions !== undefined) payload.chronicConditions = String(payload.chronicConditions);
-      } else {
-        if ((payload as DoctorForm).specialization !== undefined) payload.specialization = String(payload.specialization);
-        if ((payload as DoctorForm).availableDays !== undefined) payload.availableDays = String(payload.availableDays);
-        if ((payload as DoctorForm).paymentMethods !== undefined) payload.paymentMethods = String(payload.paymentMethods);
+      // Add all fields to formData
+      Object.entries(body).forEach(([key, value]) => {
+        if (value !== null && value !== undefined) {
+          if (typeof value === 'object') {
+            formData.append(key, JSON.stringify(value));
+          } else {
+            formData.append(key, value.toString());
+          }
+        }
+      });
+
+      // Add profile photo if changed
+      if (photoFile) {
+        formData.append('profilePhoto', photoFile);
       }
 
       const res = await fetch(endpoint, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(payload)
+        body: formData
       });
       const data = await res.json();
       if (!data.success) throw new Error(data.message || 'Failed to save');
@@ -198,9 +224,64 @@ const EditProfilePage = () => {
   return (
     <Box sx={{ backgroundColor: '#F5F9F8', minHeight: '100vh', py: 5 }}>
       <StyledPaper>
-        <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#2D3748', mb: 3 }}>
-          Edit Profile
-        </Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <IconButton onClick={() => router.push('/profile-account')} sx={{ color: '#2A7F62' }}>
+              <ArrowLeft />
+            </IconButton>
+            <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#2D3748' }}>
+              Edit Profile
+            </Typography>
+          </Box>
+        </Box>
+
+        <Divider sx={{ mb: 3 }} />
+
+        {/* Profile Photo */}
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 4, gap: 3 }}>
+          <Avatar
+            src={profilePhoto}
+            sx={{
+              width: 100,
+              height: 100,
+              bgcolor: '#2A7F62',
+              fontSize: '2rem'
+            }}
+          >
+            {(isDoctor ? doctorForm?.fullName : patientForm?.fullName)?.charAt(0).toUpperCase() || 'U'}
+          </Avatar>
+          <Box>
+            <Typography variant="h6" sx={{ color: '#2D3748', mb: 1 }}>
+              Profile Photo
+            </Typography>
+            <Button
+              component="label"
+              variant="outlined"
+              startIcon={<Camera style={{ width: 16, height: 16 }} />}
+              sx={{
+                color: '#2A7F62',
+                borderColor: '#2A7F62',
+                '&:hover': {
+                  borderColor: '#1E6D54',
+                  backgroundColor: '#E8F5E9'
+                }
+              }}
+            >
+              Upload Photo
+              <input
+                type="file"
+                hidden
+                accept="image/*"
+                onChange={handlePhotoChange}
+              />
+            </Button>
+            <Typography variant="caption" sx={{ display: 'block', mt: 1, color: '#64748B' }}>
+              JPG, PNG or GIF. Max size 5MB
+            </Typography>
+          </Box>
+        </Box>
+
+        <Divider sx={{ mb: 3 }} />
 
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
           <Box>
