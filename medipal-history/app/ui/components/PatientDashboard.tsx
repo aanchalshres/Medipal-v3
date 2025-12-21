@@ -42,6 +42,10 @@ const SectionCard = ({ title, children }: { title: string; children: React.React
 
 export default function PatientDashboard() {
   const [displayName, setDisplayName] = useState<string>("");
+  const [patientId, setPatientId] = useState<string>("");
+  const [totalVisits] = useState<number>(12); // Will fetch from backend in production
+  const [lastVisitDate] = useState<string>("December 15, 2024"); // Will fetch from backend
+  const [latestReport] = useState<string>("Blood Test - Dec 18, 2024"); // Will fetch from backend
   const today = format(new Date(), "EEEE, MMMM dd, yyyy");
 
   // Rotate 4-5 health tips with simple fade transition
@@ -72,6 +76,8 @@ export default function PatientDashboard() {
         const full: string = data.user.fullName as string;
         const first = full.trim().split(/\s+/)[0];
         setDisplayName(first || 'Patient');
+        // Set patient ID (using phone as ID or could be a separate field)
+        setPatientId(data.user.phone || data.user._id || 'N/A');
       }
     })
     .catch(() => {});
@@ -96,10 +102,58 @@ export default function PatientDashboard() {
         </Typography>
       </div>
 
-      {/* Welcome Message */}
-      <Typography variant="h6" sx={{ fontWeight: "bold", mb: 3, color: colors.primary }}>
-        Hey {displayName || 'Patient'}, how are you feeling today?
-      </Typography>
+      {/* Welcome Message with Patient Info */}
+      <Card className="rounded-xl shadow-sm mb-4" sx={{ backgroundColor: colors.cardBg }}>
+        <CardContent>
+          <Typography variant="h6" sx={{ fontWeight: "bold", mb: 2, color: colors.primary }}>
+            Hey {displayName || 'Patient'}, how are you feeling today?
+          </Typography>
+          
+          {/* Quick Overview Stats */}
+          <Box sx={{ 
+            display: 'grid', 
+            gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' },
+            gap: 2,
+            mt: 2
+          }}>
+            <Box sx={{ bgcolor: '#E8F5E9', p: 2, borderRadius: 2 }}>
+              <Typography variant="body2" sx={{ color: colors.secondaryText, mb: 0.5 }}>
+                Patient ID
+              </Typography>
+              <Typography variant="h6" sx={{ fontWeight: 'bold', color: colors.primary }}>
+                {patientId || 'Loading...'}
+              </Typography>
+            </Box>
+            
+            <Box sx={{ bgcolor: '#E3F2FD', p: 2, borderRadius: 2 }}>
+              <Typography variant="body2" sx={{ color: colors.secondaryText, mb: 0.5 }}>
+                Total Visits
+              </Typography>
+              <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#1976D2' }}>
+                {totalVisits}
+              </Typography>
+            </Box>
+            
+            <Box sx={{ bgcolor: '#FFF3E0', p: 2, borderRadius: 2 }}>
+              <Typography variant="body2" sx={{ color: colors.secondaryText, mb: 0.5 }}>
+                Last Visit
+              </Typography>
+              <Typography variant="body2" sx={{ fontWeight: 'bold', color: '#F57C00' }}>
+                {lastVisitDate}
+              </Typography>
+            </Box>
+            
+            <Box sx={{ bgcolor: '#FCE4EC', p: 2, borderRadius: 2 }}>
+              <Typography variant="body2" sx={{ color: colors.secondaryText, mb: 0.5 }}>
+                Latest Report
+              </Typography>
+              <Typography variant="body2" sx={{ fontWeight: 'bold', color: '#C2185B' }}>
+                {latestReport}
+              </Typography>
+            </Box>
+          </Box>
+        </CardContent>
+      </Card>
 
       {/* Health Tips */}
       <SectionCard title="Health Tips">

@@ -231,7 +231,7 @@ export default function DoctorRegisterPage() {
       if (!formData.licenseDocument) newErrors.licenseDocument = 'License document is required';
       if (!formData.degreeDocument) newErrors.degreeDocument = 'Degree document is required';
       if (!formData.citizenshipDocument) newErrors.citizenshipDocument = 'Citizenship document is required';
-      if (!formData.profilePhoto) newErrors.profilePhoto = 'Profile photo is required';
+      // Profile photo is optional during registration
     }
     
     setErrors(newErrors);

@@ -149,7 +149,7 @@ export default function PatientRegisterPage() {
       if (!formData.citizenshipNumber) newErrors.citizenshipNumber = 'Citizenship number is required';
       if (!formData.citizenshipIssuedDistrict) newErrors.citizenshipIssuedDistrict = 'Issued district is required';
       if (!formData.citizenshipDocument) newErrors.citizenshipDocument = 'Citizenship document is required';
-      if (!formData.profilePhoto) newErrors.profilePhoto = 'Profile photo is required';
+      // Profile photo is optional during registration
     }
     
     setErrors(newErrors);

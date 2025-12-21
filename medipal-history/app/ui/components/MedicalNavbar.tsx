@@ -41,11 +41,9 @@ interface NavItem {
 
 const patientNavigationItems: NavItem[] = [
   { name: "Dashboard", path: "/patient/dashboard" },
-  { name: "Medical Records", path: "/medical-records" },
+  { name: "Medical History", path: "/medical-records" },
+  { name: "Reports", path: "/reports" },
   { name: "Appointments", path: "/appointments" },
-  { name: "Prescriptions", path: "/prescriptions" },
-  { name: "Vaccination", path: "/vaccination" },
-  { name: "Ambulance", path: "/ambulance" },
 ];
 
 const doctorNavigationItems: NavItem[] = [
@@ -83,7 +81,6 @@ const notifications: Notification[] = [
 
 export function MedicalNavbar() {
   const pathname = usePathname();
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [notificationAnchorEl, setNotificationAnchorEl] = useState<null | HTMLElement>(null);
   const [unreadCount, setUnreadCount] = useState<number | null>(null);
   const [theme, setTheme] = useState<'light' | 'dark' | null>(null);
@@ -121,14 +118,6 @@ export function MedicalNavbar() {
   };
 
   const isActive = (path: string) => pathname === path;
-
-  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-  };
 
   const handleNotificationOpen = (event: React.MouseEvent<HTMLElement>) => {
     setNotificationAnchorEl(event.currentTarget);
@@ -364,13 +353,15 @@ export function MedicalNavbar() {
   </MuiMenu>
 </>
 
-            {/* User Menu - Only show when logged in */}
+            {/* Profile Icon and Logout Button - Only show when logged in */}
             {isLoggedIn && (
               <>
                 <IconButton
+                  component={Link}
+                  href="/profile-account"
                   color="inherit"
-                  onClick={handleMenuOpen}
                   size="small"
+                  title="Profile"
                 >
                   <Avatar
                     sx={{
@@ -384,40 +375,25 @@ export function MedicalNavbar() {
                   </Avatar>
                 </IconButton>
 
-                <MuiMenu
-                  anchorEl={anchorEl}
-                  open={Boolean(anchorEl)}
-                  onClose={handleMenuClose}
-                  PaperProps={{
-                    sx: {
-                      mt: 1.5,
-                      minWidth: 200,
-                      backgroundColor: theme === "dark" ? "#1E1E1E" : "#FFFFFF",
+                <Button
+                  onClick={() => {
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('role');
+                    setIsLoggedIn(false);
+                    window.location.href = '/auth/login';
+                  }}
+                  startIcon={<LogOut className="h-4 w-4" />}
+                  sx={{
+                    color: '#D32F2F',
+                    textTransform: 'none',
+                    fontWeight: 500,
+                    '&:hover': {
+                      bgcolor: '#FFEBEE'
                     }
                   }}
                 >
-                  <MenuItem
-                    component={Link}
-                    href="/profile-account"
-                    onClick={handleMenuClose}
-                  >
-                    <User className="h-4 w-4 mr-2" />
-                    Profile
-                  </MenuItem>
-                  <Divider />
-                  <MenuItem
-                    onClick={() => {
-                      localStorage.removeItem('token');
-                      setIsLoggedIn(false);
-                      handleMenuClose();
-                      window.location.href = '/auth/login';
-                    }}
-                    sx={{ color: 'error.main' }}
-                  >
-                    <LogOut className="h-4 w-4 mr-2" />
-                    Logout
-                  </MenuItem>
-                </MuiMenu>
+                  Logout
+                </Button>
               </>
             )}
           </div>
