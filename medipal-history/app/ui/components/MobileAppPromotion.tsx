@@ -368,7 +368,7 @@ const DownloadSection = () => {
                         <Link href="/" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
                           <img
                             src="/images/logo.png"
-                            alt="MediPortal Logo"
+                            alt="MediPal Logo"
                             className="h-14 w-40 object-contain mr-auto"
                           />
                         </Link>

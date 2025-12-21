@@ -48,10 +48,9 @@ const patientNavigationItems: NavItem[] = [
 
 const doctorNavigationItems: NavItem[] = [
   { name: "Dashboard", path: "/doctor/dashboard" },
-  { name: "My Patients", path: "/doctor/patients" },
+  { name: "Search Patient", path: "/doctor/search-patient" },
+  { name: "Consultations", path: "/doctor/consultations" },
   { name: "Appointments", path: "/doctor/appointments" },
-  { name: "Prescriptions", path: "/doctor/prescriptions" },
-  { name: "Schedule", path: "/doctor/schedule" },
 ];
 
 interface Notification {
@@ -254,7 +253,7 @@ export function MedicalNavbar() {
             >
               <img 
                 src="/images/logo.png" 
-                alt="MediPortal Logo"
+                alt="MediPal Logo"
                 className="h-40 w-40 object-contain" 
               />
             </Link>

@@ -98,7 +98,7 @@ export function Navbar() {
               >
                 <img 
                   src="/images/logo.png" 
-                  alt="MediPortal Logo"
+                  alt="MediPal Logo"
                   className="h-40 w-40 object-contain" 
                 />
               </Link>

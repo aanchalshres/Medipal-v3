@@ -1,13 +1,19 @@
 "use client";
 import React, { useEffect, useState } from "react";
+import Link from "next/link";
 import { 
   Card, 
   CardContent, 
   Typography, 
   Avatar,
   Box,
-  Fade
+  Fade,
+  Button
 } from "@mui/material";
+import { 
+  ArrowForward as ArrowForwardIcon,
+  Visibility as ViewIcon
+} from "@mui/icons-material";
 import HealthAnalytics from './HealthAnalytics';
 import { format } from "date-fns";
 
@@ -24,13 +30,42 @@ const colors = {
   success: "#388e3c"
 };
 
-// Reusable section card
-const SectionCard = ({ title, children }: { title: string; children: React.ReactNode }) => (
+// Reusable section card with optional link
+const SectionCard = ({ 
+  title, 
+  children, 
+  linkHref, 
+  linkText 
+}: { 
+  title: string; 
+  children: React.ReactNode;
+  linkHref?: string;
+  linkText?: string;
+}) => (
   <Card className="rounded-xl shadow-sm mb-4" sx={{ backgroundColor: colors.cardBg }}>
     <CardContent>
-      <Typography variant="h6" sx={{ fontWeight: "bold", color: colors.primary, mb: 2 }}>
-        {title}
-      </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Typography variant="h6" sx={{ fontWeight: "bold", color: colors.primary }}>
+          {title}
+        </Typography>
+        {linkHref && linkText && (
+          <Button
+            component={Link}
+            href={linkHref}
+            endIcon={<ArrowForwardIcon />}
+            sx={{ 
+              color: colors.primary,
+              textTransform: 'none',
+              fontWeight: 500,
+              '&:hover': {
+                backgroundColor: 'rgba(47, 125, 109, 0.08)'
+              }
+            }}
+          >
+            {linkText}
+          </Button>
+        )}
+      </Box>
       {children}
     </CardContent>
   </Card>
@@ -84,13 +119,13 @@ export default function PatientDashboard() {
   }, []);
 
   const upcomingAppointments = [
-    { doctor: "Dr. Smith", date: "05 Aug 2025" },
-    { doctor: "Dr. Lee", date: "20 Jul 2025" }
+    { doctor: "Dr. Ramesh Sharma", date: "Dec 28, 2024", link: "/appointments" },
+    { doctor: "Dr. Krishna Bhattarai", date: "Dec 30, 2024", link: "/appointments" }
   ];
 
   const recentReports = [
-    { test: "Blood Test", date: "01 Aug 2025" },
-    { test: "X-Ray", date: "15 Jul 2025" }
+    { test: "Blood Test Results", date: "Dec 15, 2024", link: "/reports" },
+    { test: "X-Ray Chest", date: "Dec 10, 2024", link: "/reports" }
   ];
 
   return (
@@ -125,7 +160,22 @@ export default function PatientDashboard() {
               </Typography>
             </Box>
             
-            <Box sx={{ bgcolor: '#E3F2FD', p: 2, borderRadius: 2 }}>
+            <Box 
+              component={Link}
+              href="/medical-records"
+              sx={{ 
+                bgcolor: '#E3F2FD', 
+                p: 2, 
+                borderRadius: 2,
+                textDecoration: 'none',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
+                }
+              }}
+            >
               <Typography variant="body2" sx={{ color: colors.secondaryText, mb: 0.5 }}>
                 Total Visits
               </Typography>
@@ -134,7 +184,22 @@ export default function PatientDashboard() {
               </Typography>
             </Box>
             
-            <Box sx={{ bgcolor: '#FFF3E0', p: 2, borderRadius: 2 }}>
+            <Box 
+              component={Link}
+              href="/medical-records"
+              sx={{ 
+                bgcolor: '#FFF3E0', 
+                p: 2, 
+                borderRadius: 2,
+                textDecoration: 'none',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
+                }
+              }}
+            >
               <Typography variant="body2" sx={{ color: colors.secondaryText, mb: 0.5 }}>
                 Last Visit
               </Typography>
@@ -143,7 +208,22 @@ export default function PatientDashboard() {
               </Typography>
             </Box>
             
-            <Box sx={{ bgcolor: '#FCE4EC', p: 2, borderRadius: 2 }}>
+            <Box 
+              component={Link}
+              href="/reports"
+              sx={{ 
+                bgcolor: '#FCE4EC', 
+                p: 2, 
+                borderRadius: 2,
+                textDecoration: 'none',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
+                }
+              }}
+            >
               <Typography variant="body2" sx={{ color: colors.secondaryText, mb: 0.5 }}>
                 Latest Report
               </Typography>
@@ -176,29 +256,65 @@ export default function PatientDashboard() {
       <HealthAnalytics />
 
       {/* Recent Reports */}
-      <SectionCard title="My Reports (Recent)">
-        <ul className="list-disc pl-5">
+      <SectionCard title="My Reports (Recent)" linkHref="/reports" linkText="View All">
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
           {recentReports.map((report, index) => (
-            <li key={index}>
-              <Typography>
+            <Box 
+              key={index}
+              component={Link}
+              href={report.link}
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                p: 1.5,
+                borderRadius: 1,
+                textDecoration: 'none',
+                transition: 'all 0.2s',
+                '&:hover': {
+                  bgcolor: 'rgba(47, 125, 109, 0.05)',
+                  transform: 'translateX(4px)'
+                }
+              }}
+            >
+              <Typography variant="body2" sx={{ color: colors.text }}>
                 {report.test} - {report.date}
               </Typography>
-            </li>
+              <ViewIcon sx={{ fontSize: 18, color: colors.primary }} />
+            </Box>
           ))}
-        </ul>
+        </Box>
       </SectionCard>
 
       {/* Recent Appointments */}
-      <SectionCard title="My Appointments (Recent)">
-        <ul className="list-disc pl-5">
+      <SectionCard title="My Appointments (Recent)" linkHref="/appointments" linkText="View All">
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
           {upcomingAppointments.map((appt, index) => (
-            <li key={index}>
-              <Typography>
+            <Box 
+              key={index}
+              component={Link}
+              href={appt.link}
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                p: 1.5,
+                borderRadius: 1,
+                textDecoration: 'none',
+                transition: 'all 0.2s',
+                '&:hover': {
+                  bgcolor: 'rgba(47, 125, 109, 0.05)',
+                  transform: 'translateX(4px)'
+                }
+              }}
+            >
+              <Typography variant="body2" sx={{ color: colors.text }}>
                 {appt.doctor} - {appt.date}
               </Typography>
-            </li>
+              <ViewIcon sx={{ fontSize: 18, color: colors.primary }} />
+            </Box>
           ))}
-        </ul>
+        </Box>
       </SectionCard>
     </div>
   );

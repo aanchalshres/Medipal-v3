@@ -11,13 +11,15 @@ import {
   Divider,
   Paper,
 } from "@mui/material";
+import Link from "next/link";
 import { 
   Calendar,
   Users,
   FileText,
   Clock,
-  TrendingUp,
-  Activity
+  Search,
+  Activity,
+  Building2
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -95,6 +97,7 @@ interface Appointment {
 
 export default function DoctorDashboard() {
   const [doctorName, setDoctorName] = useState<string>("");
+  const [hospitalName, setHospitalName] = useState<string>("");
   const today = format(new Date(), "EEEE, MMMM dd, yyyy");
 
   // Fetch logged-in doctor profile
@@ -107,10 +110,13 @@ export default function DoctorDashboard() {
     })
     .then(r => r.json())
     .then(data => {
-      if (data?.success && data?.user?.fullName) {
-        const full: string = data.user.fullName as string;
-        const first = full.trim().split(/\s+/)[0];
-        setDoctorName(first || 'Doctor');
+      if (data?.success && data?.user) {
+        if (data.user.fullName) {
+          setDoctorName(data.user.fullName);
+        }
+        if (data.user.hospital) {
+          setHospitalName(data.user.hospital);
+        }
       }
     })
     .catch(() => {});
@@ -123,8 +129,14 @@ export default function DoctorDashboard() {
     { patientName: "Mike Johnson", time: "02:00 PM", type: "Check-up", status: 'upcoming' },
   ];
 
+  const recentConsultations = [
+    { patientId: "P12345", patientName: "Sarah Williams", date: "Dec 20, 2024", diagnosis: "Hypertension" },
+    { patientId: "P12346", patientName: "Robert Brown", date: "Dec 20, 2024", diagnosis: "Diabetes checkup" },
+    { patientId: "P12347", patientName: "Emily Davis", date: "Dec 19, 2024", diagnosis: "Common cold" },
+  ];
+
   const stats = {
-    todayPatients: 8,
+    todayPatients: todaysAppointments.length,
     pendingAppointments: 3,
     completedToday: 5,
     totalPatients: 156
@@ -149,9 +161,22 @@ export default function DoctorDashboard() {
       </div>
 
       {/* Welcome Message */}
-      <Typography variant="h5" sx={{ fontWeight: "bold", mb: 4, color: colors.primary }}>
-        Hello Dr. {doctorName}, ready for today's consultations?
-      </Typography>
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="h4" sx={{ fontWeight: "bold", color: colors.primary, mb: 1 }}>
+          Welcome, Dr. {doctorName}
+        </Typography>
+        {hospitalName && (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+            <Building2 size={18} color={colors.secondaryText} />
+            <Typography variant="body1" sx={{ color: colors.secondaryText }}>
+              {hospitalName}
+            </Typography>
+          </Box>
+        )}
+        <Typography variant="body1" sx={{ color: colors.secondaryText }}>
+          You have <strong>{stats.todayPatients}</strong> appointments scheduled for today
+        </Typography>
+      </Box>
 
       {/* Stats Grid */}
       <Box className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -252,78 +277,71 @@ export default function DoctorDashboard() {
               <Button 
                 fullWidth 
                 variant="contained"
-                startIcon={<Calendar />}
+                component={Link}
+                href="/doctor/search-patient"
+                startIcon={<Search />}
                 sx={{ 
                   bgcolor: colors.primary,
                   '&:hover': { bgcolor: '#1e6d54' },
-                  mb: 1
+                  mb: 1,
+                  textTransform: 'none'
                 }}
               >
-                View Schedule
+                Search Patient
               </Button>
               <Button 
                 fullWidth 
                 variant="outlined"
-                startIcon={<Users />}
-                sx={{ 
-                  color: colors.primary,
-                  borderColor: colors.primary,
-                  mb: 1
-                }}
-              >
-                Patient Records
-              </Button>
-              <Button 
-                fullWidth 
-                variant="outlined"
+                component={Link}
+                href="/doctor/consultations"
                 startIcon={<FileText />}
                 sx={{ 
                   color: colors.primary,
-                  borderColor: colors.primary
+                  borderColor: colors.primary,
+                  mb: 1,
+                  textTransform: 'none'
                 }}
               >
-                Prescriptions
+                View Consultations
+              </Button>
+              <Button 
+                fullWidth 
+                variant="outlined"
+                component={Link}
+                href="/doctor/appointments"
+                startIcon={<Calendar />}
+                sx={{ 
+                  color: colors.primary,
+                  borderColor: colors.primary,
+                  textTransform: 'none'
+                }}
+              >
+                Manage Appointments
               </Button>
             </Box>
           </SectionCard>
 
-          <SectionCard title="Recent Activity">
+          <SectionCard title="Recent Consultations">
             <Box className="space-y-3">
-              <Box className="flex items-start gap-2">
-                <Activity size={16} color={colors.primary} className="mt-1" />
-                <Box>
-                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                    New patient registered
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: colors.secondaryText }}>
-                    2 hours ago
-                  </Typography>
-                </Box>
-              </Box>
-              <Divider />
-              <Box className="flex items-start gap-2">
-                <FileText size={16} color={colors.primary} className="mt-1" />
-                <Box>
-                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                    Lab results uploaded
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: colors.secondaryText }}>
-                    5 hours ago
-                  </Typography>
-                </Box>
-              </Box>
-              <Divider />
-              <Box className="flex items-start gap-2">
-                <TrendingUp size={16} color={colors.primary} className="mt-1" />
-                <Box>
-                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                    Monthly report ready
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: colors.secondaryText }}>
-                    1 day ago
-                  </Typography>
-                </Box>
-              </Box>
+              {recentConsultations.map((consultation, index) => (
+                <React.Fragment key={index}>
+                  <Box className="flex items-start gap-2">
+                    <Users size={16} color={colors.primary} className="mt-1" />
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                        {consultation.patientName}
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: colors.secondaryText, display: 'block' }}>
+                        ID: {consultation.patientId}
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: colors.secondaryText }}>
+                        {consultation.date} • {consultation.diagnosis}
+                      </Typography>
+                    </Box>
+                  </Box>
+                  {index < recentConsultations.length - 1 && <Divider />}
+                </React.Fragment>
+              ))}
             </Box>
           </SectionCard>
         </div>
