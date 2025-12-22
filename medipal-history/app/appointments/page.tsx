@@ -69,16 +69,20 @@ export default function AppointmentsPage() {
 
   // Form state for new appointment
   const [newAppointment, setNewAppointment] = useState({
+    doctorId: "",
     hospitalName: "",
     doctorName: "",
     doctorSpecialization: "",
     appointmentType: "General Consultation",
     date: "",
     time: "",
-    reason: ""
+    reason: "",
+    notes: ""
   });
+  const [doctors, setDoctors] = useState<any[]>([]);
+  const [loadingDoctors, setLoadingDoctors] = useState(false);
 
-  // Fetch patient profile
+  // Fetch patient profile and appointments
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -98,78 +102,82 @@ export default function AppointmentsPage() {
           setPatientName(profileData.user.fullName);
         }
 
-        // Sample appointments data (in production, fetch from backend)
-        const sampleAppointments: Appointment[] = [
-          {
-            id: "1",
-            date: "2024-12-28",
-            time: "10:00 AM",
-            hospitalName: "City General Hospital",
-            doctorName: "Dr. Ramesh Sharma",
-            doctorSpecialization: "Cardiologist",
-            appointmentType: "Follow-up",
-            status: "Approved",
-            reason: "Regular heart checkup",
-            notes: "Bring previous reports"
-          },
-          {
-            id: "2",
-            date: "2024-12-25",
-            time: "2:30 PM",
-            hospitalName: "Kathmandu Medical Center",
-            doctorName: "Dr. Sita Thapa",
-            doctorSpecialization: "General Physician",
-            appointmentType: "General Consultation",
-            status: "Completed",
-            reason: "Fever and body ache",
-            notes: "Prescribed medication for 5 days"
-          },
-          {
-            id: "3",
-            date: "2024-12-30",
-            time: "11:00 AM",
-            hospitalName: "Patan Hospital",
-            doctorName: "Dr. Krishna Bhattarai",
-            doctorSpecialization: "Orthopedic",
-            appointmentType: "Consultation",
-            status: "Pending",
-            reason: "Knee pain evaluation"
-          },
-          {
-            id: "4",
-            date: "2024-12-20",
-            time: "3:00 PM",
-            hospitalName: "Grande International Hospital",
-            doctorName: "Dr. Anita Shrestha",
-            doctorSpecialization: "Dermatologist",
-            appointmentType: "Follow-up",
-            status: "Completed",
-            reason: "Skin rash follow-up"
-          },
-          {
-            id: "5",
-            date: "2025-01-05",
-            time: "9:30 AM",
-            hospitalName: "Manipal Teaching Hospital",
-            doctorName: "Dr. Binod Kafle",
-            doctorSpecialization: "ENT Specialist",
-            appointmentType: "General Consultation",
-            status: "Pending",
-            reason: "Throat examination"
-          }
-        ];
+        // Fetch appointments from API
+        const appointmentsResponse = await fetch('http://localhost:5000/api/appointments/patient/list', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const appointmentsData = await appointmentsResponse.json();
 
-        setAppointments(sampleAppointments);
-        setFilteredAppointments(sampleAppointments);
+        if (appointmentsData?.success && appointmentsData?.data) {
+          // Transform data to match interface
+          const transformedAppointments = appointmentsData.data.map((apt: any) => ({
+            id: apt._id,
+            date: new Date(apt.date).toISOString().split('T')[0],
+            time: apt.time,
+            hospitalName: apt.hospitalName,
+            doctorName: apt.doctorName,
+            doctorSpecialization: apt.doctorSpecialization,
+            appointmentType: apt.appointmentType,
+            status: apt.status,
+            reason: apt.reason,
+            notes: apt.notes
+          }));
+          setAppointments(transformedAppointments);
+          setFilteredAppointments(transformedAppointments);
+        }
+
         setLoading(false);
       } catch (error) {
         console.error('Error fetching data:', error);
+        setSnackbar({
+          open: true,
+          message: 'Failed to load appointments',
+          severity: 'error'
+        });
         setLoading(false);
       }
     };
 
     fetchData();
   }, []);
+
+  // Fetch doctors when dialog opens
+  useEffect(() => {
+    if (dialogOpen) {
+      fetchDoctors();
+    }
+  }, [dialogOpen]);
+
+  const fetchDoctors = async () => {
+    setLoadingDoctors(true);
+    try {
+      const response = await fetch('http://localhost:5000/api/doctors/search');
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      if (data?.success && data?.data) {
+        setDoctors(data.data);
+      } else {
+        console.error('No doctors found or invalid response:', data);
+        setSnackbar({
+          open: true,
+          message: 'No doctors available at the moment',
+          severity: 'info'
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching doctors:', error);
+      setSnackbar({
+        open: true,
+        message: 'Failed to load doctors. Please check if the server is running.',
+        severity: 'error'
+      });
+    }
+    setLoadingDoctors(false);
+  };
 
   // Filter appointments
   useEffect(() => {
@@ -201,18 +209,33 @@ export default function AppointmentsPage() {
   const handleCloseDialog = () => {
     setDialogOpen(false);
     setNewAppointment({
+      doctorId: "",
       hospitalName: "",
       doctorName: "",
       doctorSpecialization: "",
       appointmentType: "General Consultation",
       date: "",
       time: "",
-      reason: ""
+      reason: "",
+      notes: ""
     });
   };
 
-  const handleSubmitAppointment = () => {
-    if (!newAppointment.hospitalName || !newAppointment.doctorName || !newAppointment.date || !newAppointment.time || !newAppointment.reason) {
+  const handleDoctorChange = (doctorId: string) => {
+    const selectedDoctor = doctors.find(d => d._id === doctorId);
+    if (selectedDoctor) {
+      setNewAppointment({
+        ...newAppointment,
+        doctorId: selectedDoctor._id,
+        doctorName: selectedDoctor.fullName,
+        doctorSpecialization: Array.isArray(selectedDoctor.specialization) ? selectedDoctor.specialization.join(', ') : selectedDoctor.specialization,
+        hospitalName: selectedDoctor.hospital
+      });
+    }
+  };
+
+  const handleSubmitAppointment = async () => {
+    if (!newAppointment.doctorId || !newAppointment.date || !newAppointment.time || !newAppointment.reason) {
       setSnackbar({
         open: true,
         message: "Please fill all required fields",
@@ -221,25 +244,80 @@ export default function AppointmentsPage() {
       return;
     }
 
-    const appointment: Appointment = {
-      id: Date.now().toString(),
-      date: newAppointment.date,
-      time: newAppointment.time,
-      hospitalName: newAppointment.hospitalName,
-      doctorName: newAppointment.doctorName,
-      doctorSpecialization: newAppointment.doctorSpecialization,
-      appointmentType: newAppointment.appointmentType,
-      status: "Pending",
-      reason: newAppointment.reason
-    };
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setSnackbar({
+          open: true,
+          message: "Please login to book an appointment",
+          severity: "error"
+        });
+        return;
+      }
 
-    setAppointments([appointment, ...appointments]);
-    handleCloseDialog();
-    setSnackbar({
-      open: true,
-      message: "Appointment requested successfully! You will be notified once approved.",
-      severity: "success"
-    });
+      const response = await fetch('http://localhost:5000/api/appointments/patient/create', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          doctorId: newAppointment.doctorId,
+          appointmentType: newAppointment.appointmentType,
+          date: newAppointment.date,
+          time: newAppointment.time,
+          reason: newAppointment.reason,
+          notes: newAppointment.notes
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Refresh appointments list
+        const appointmentsResponse = await fetch('http://localhost:5000/api/appointments/patient/list', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const appointmentsData = await appointmentsResponse.json();
+
+        if (appointmentsData?.success && appointmentsData?.data) {
+          const transformedAppointments = appointmentsData.data.map((apt: any) => ({
+            id: apt._id,
+            date: new Date(apt.date).toISOString().split('T')[0],
+            time: apt.time,
+            hospitalName: apt.hospitalName,
+            doctorName: apt.doctorName,
+            doctorSpecialization: apt.doctorSpecialization,
+            appointmentType: apt.appointmentType,
+            status: apt.status,
+            reason: apt.reason,
+            notes: apt.notes
+          }));
+          setAppointments(transformedAppointments);
+          setFilteredAppointments(transformedAppointments);
+        }
+
+        handleCloseDialog();
+        setSnackbar({
+          open: true,
+          message: "Appointment requested successfully! You will be notified once approved.",
+          severity: "success"
+        });
+      } else {
+        setSnackbar({
+          open: true,
+          message: data.message || "Failed to create appointment",
+          severity: "error"
+        });
+      }
+    } catch (error) {
+      console.error('Error creating appointment:', error);
+      setSnackbar({
+        open: true,
+        message: "Failed to create appointment. Please try again.",
+        severity: "error"
+      });
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -607,29 +685,44 @@ export default function AppointmentsPage() {
         </DialogTitle>
         <DialogContent sx={{ mt: 2 }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pt: 1 }}>
-            <TextField
-              fullWidth
-              label="Hospital Name *"
-              value={newAppointment.hospitalName}
-              onChange={(e) => setNewAppointment({...newAppointment, hospitalName: e.target.value})}
-              placeholder="e.g., City General Hospital"
-            />
-            
-            <TextField
-              fullWidth
-              label="Doctor Name *"
-              value={newAppointment.doctorName}
-              onChange={(e) => setNewAppointment({...newAppointment, doctorName: e.target.value})}
-              placeholder="e.g., Dr. Ramesh Sharma"
-            />
+            <FormControl fullWidth>
+              <InputLabel>Select Doctor *</InputLabel>
+              <Select
+                value={newAppointment.doctorId}
+                onChange={(e) => handleDoctorChange(e.target.value)}
+                label="Select Doctor *"
+                disabled={loadingDoctors}
+              >
+                {loadingDoctors ? (
+                  <MenuItem disabled>
+                    <CircularProgress size={20} sx={{ mr: 2 }} />
+                    Loading doctors...
+                  </MenuItem>
+                ) : doctors.length === 0 ? (
+                  <MenuItem disabled>No doctors available</MenuItem>
+                ) : (
+                  doctors.map((doctor) => (
+                    <MenuItem key={doctor._id} value={doctor._id}>
+                      <Box>
+                        <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                          {doctor.fullName}
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: '#64748B' }}>
+                          {Array.isArray(doctor.specialization) ? doctor.specialization.join(', ') : doctor.specialization} • {doctor.hospital}
+                        </Typography>
+                      </Box>
+                    </MenuItem>
+                  ))
+                )}
+              </Select>
+            </FormControl>
 
-            <TextField
-              fullWidth
-              label="Doctor Specialization"
-              value={newAppointment.doctorSpecialization}
-              onChange={(e) => setNewAppointment({...newAppointment, doctorSpecialization: e.target.value})}
-              placeholder="e.g., Cardiologist"
-            />
+            {newAppointment.doctorId && (
+              <Alert severity="info" sx={{ borderRadius: 2 }}>
+                <Typography variant="body2" sx={{ fontWeight: 500 }}>Hospital: {newAppointment.hospitalName}</Typography>
+                <Typography variant="caption">Specialization: {newAppointment.doctorSpecialization}</Typography>
+              </Alert>
+            )}
 
             <FormControl fullWidth>
               <InputLabel>Appointment Type</InputLabel>
@@ -676,9 +769,21 @@ export default function AppointmentsPage() {
               placeholder="Briefly describe your symptoms or reason for appointment"
             />
 
-            <Alert severity="info" sx={{ borderRadius: 2 }}>
-              Your appointment request will be sent to the hospital. You will be notified once it's approved.
-            </Alert>
+            <TextField
+              fullWidth
+              label="Additional Notes (Optional)"
+              multiline
+              rows={2}
+              value={newAppointment.notes}
+              onChange={(e) => setNewAppointment({...newAppointment, notes: e.target.value})}
+              placeholder="Any additional information for the doctor"
+            />
+
+            {!newAppointment.doctorId && (
+              <Alert severity="info" sx={{ borderRadius: 2 }}>
+                Please select a doctor to continue
+              </Alert>
+            )}
           </Box>
         </DialogContent>
         <DialogActions sx={{ p: 3, pt: 2 }}>

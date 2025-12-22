@@ -471,7 +471,7 @@ const ProfileView = () => {
                         PATIENT ID
                       </Typography>
                       <Typography sx={{ fontSize: '1.1rem', color: '#2f7d6d', fontWeight: 600 }}>
-                        : {userData.id || userData.phone || 'N/A'}
+                        : {userData.patientId || userData.id || userData.phone || 'N/A'}
                       </Typography>
                     </Box>
                     <Box>

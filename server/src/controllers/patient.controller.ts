@@ -83,6 +83,10 @@ export const registerPatient = async (req: Request, res: Response) => {
     // Hash password
     const hashedPassword = await bcrypt.hash(req.body.password, 10);
 
+    // Get the next sequential patient number
+    const patientCount = await Patient.countDocuments();
+    const patientNumber = patientCount + 1;
+
     // Helper function to parse array fields
     const parseArrayField = (field: any): string[] => {
       if (!field) return [];
@@ -102,6 +106,7 @@ export const registerPatient = async (req: Request, res: Response) => {
 
     // Prepare patient data with proper type conversion
     const patientData = {
+      patientNumber,
       fullName: req.body.fullName?.trim(),
       email: req.body.email?.trim().toLowerCase(),
       password: hashedPassword,
@@ -193,8 +198,21 @@ export const getPatientProfile = async (req: Request, res: Response) => {
       return res.status(404).json({ success: false, message: 'Patient not found' });
     }
 
+    // If patientNumber doesn't exist (for old records), assign one and save
+    if (!patient.patientNumber) {
+      const patientCount = await Patient.countDocuments();
+      patient.patientNumber = patientCount;
+      await patient.save();
+    }
+
+    // Generate Patient ID in format: MP-<sequential_number><DOB_YYYYMMDD>
+    const dobDate = new Date(patient.dateOfBirth);
+    const dobFormatted = `${dobDate.getFullYear()}${String(dobDate.getMonth() + 1).padStart(2, '0')}${String(dobDate.getDate()).padStart(2, '0')}`;
+    const patientId = `MP-${String(patient.patientNumber).padStart(2, '0')}${dobFormatted}`;
+
     const data = {
       id: patient._id,
+      patientId: patientId,
       fullName: patient.fullName,
       email: patient.email,
       phone: patient.phone,

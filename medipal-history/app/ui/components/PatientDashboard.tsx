@@ -111,8 +111,8 @@ export default function PatientDashboard() {
         const full: string = data.user.fullName as string;
         const first = full.trim().split(/\s+/)[0];
         setDisplayName(first || 'Patient');
-        // Set patient ID (using phone as ID or could be a separate field)
-        setPatientId(data.user.phone || data.user._id || 'N/A');
+        // Set patient ID (using the new patientId format from backend)
+        setPatientId(data.user.patientId || data.user.phone || data.user._id || 'N/A');
       }
     })
     .catch(() => {});

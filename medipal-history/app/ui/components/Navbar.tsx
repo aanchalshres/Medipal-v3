@@ -11,7 +11,6 @@ import {
 import { ThemeProvider as MuiThemeProvider, createTheme } from "@mui/material";
 
 export function Navbar() {
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [registerAnchorEl, setRegisterAnchorEl] = useState<null | HTMLElement>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [role, setRole] = useState<string | null>(null);
@@ -26,12 +25,8 @@ export function Navbar() {
     setRegisterAnchorEl(null);
   };
 
-  // Initialize theme and auth state
+  // Initialize auth state
   useEffect(() => {
-    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    setTheme(savedTheme || (prefersDark ? 'dark' : 'light'));
-    
     // Check authentication
     const token = localStorage.getItem('token');
     const userRole = localStorage.getItem('role');
@@ -39,29 +34,19 @@ export function Navbar() {
     setRole(userRole);
   }, []);
 
-  // Apply theme changes
-  useEffect(() => {
-    document.documentElement.classList.toggle('dark', theme === 'dark');
-    localStorage.setItem('theme', theme);
-  }, [theme]);
-
-  const toggleTheme = () => {
-    setTheme(theme === 'dark' ? 'light' : 'dark');
-  };
-
-  // MUI theme with custom medical colors
+  // MUI theme with custom medical colors (light mode only)
   const muiTheme = createTheme({
     palette: {
-      mode: theme,
+      mode: 'light',
       primary: {
-        main: theme === "dark" ? "#2E7D32" : "#2A7F62",
+        main: '#2A7F62',
       },
       secondary: {
-        main: theme === "dark" ? "#1E3A4D" : "#3A5E6D",
+        main: '#3A5E6D',
       },
       background: {
-        default: theme === "dark" ? "#121212" : "#FFFFFF",
-        paper: theme === "dark" ? "#1E1E1E" : "#F5F9F8",
+        default: '#FFFFFF',
+        paper: '#F5F9F8',
       },
     },
     components: {
@@ -81,11 +66,7 @@ export function Navbar() {
   return (
     <MuiThemeProvider theme={muiTheme}>
       <header 
-        className={`sticky top-0 z-50 w-full border-b backdrop-blur supports-[backdrop-filter]:bg-background/60 ${
-          theme === "dark" 
-            ? "bg-[#121212] border-[#424242]" 
-            : "bg-[#FFFFFF] border-[#E2E8F0]"
-        }`}
+        className="sticky top-0 z-50 w-full border-b backdrop-blur supports-[backdrop-filter]:bg-background/60 bg-[#FFFFFF] border-[#E2E8F0]"
       >
         {/* Full width container with centered content */}
         <div className="w-full">
@@ -113,10 +94,10 @@ export function Navbar() {
                     href="/auth/login"
                     sx={{
                       fontSize: '0.95rem',
-                      color: theme === "dark" ? "#E0E0E0" : "#2D3748",
-                      borderColor: theme === "dark" ? "#424242" : "#E2E8F0",
+                      color: '#2D3748',
+                      borderColor: '#E2E8F0',
                       '&:hover': {
-                        borderColor: theme === "dark" ? "#E0E0E0" : "#2D3748",
+                        borderColor: '#2D3748',
                       }
                     }}
                   >
@@ -127,9 +108,9 @@ export function Navbar() {
                     size="small"
                     onClick={handleRegisterOpen}
                     sx={{
-                      backgroundColor: theme === "dark" ? "#2E7D32" : "#2A7F62",
+                      backgroundColor: '#2A7F62',
                       "&:hover": {
-                        backgroundColor: theme === "dark" ? "#1B5E20" : "#1E6D54",
+                        backgroundColor: '#1E6D54',
                       },
                       minWidth: 100,
                       padding: '6px 16px',
@@ -144,7 +125,7 @@ export function Navbar() {
                     onClose={handleRegisterClose}
                     PaperProps={{
                       sx: {
-                        backgroundColor: theme === "dark" ? "#1E1E1E" : "#F5F9F8",
+                        backgroundColor: '#F5F9F8',
                       }
                     }}
                   >
@@ -171,10 +152,10 @@ export function Navbar() {
                     href={role === 'doctor' ? '/doctor/dashboard' : '/patient/dashboard'}
                     sx={{
                       fontSize: '0.95rem',
-                      color: theme === "dark" ? "#E0E0E0" : "#2D3748",
-                      borderColor: theme === "dark" ? "#424242" : "#E2E8F0",
+                      color: '#2D3748',
+                      borderColor: '#E2E8F0',
                       '&:hover': {
-                        borderColor: theme === "dark" ? "#E0E0E0" : "#2D3748",
+                        borderColor: '#2D3748',
                       }
                     }}
                   >
@@ -189,11 +170,11 @@ export function Navbar() {
                     }}
                     sx={{
                       fontSize: '0.95rem',
-                      color: theme === "dark" ? "#E0E0E0" : "#DC2626",
-                      borderColor: theme === "dark" ? "#424242" : "#DC2626",
+                      color: '#DC2626',
+                      borderColor: '#DC2626',
                       '&:hover': {
-                        borderColor: theme === "dark" ? "#EF4444" : "#B91C1C",
-                        backgroundColor: theme === "dark" ? "rgba(239, 68, 68, 0.1)" : "rgba(220, 38, 38, 0.1)",
+                        borderColor: '#B91C1C',
+                        backgroundColor: 'rgba(220, 38, 38, 0.1)',
                       }
                     }}
                   >

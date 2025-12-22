@@ -9,6 +9,7 @@ import morgan from 'morgan';
 import patientRoutes from './routes/patient.routes';
 import doctorRoutes from './routes/doctor.routes';
 import authRoutes from './routes/auth.routes';
+import appointmentRoutes from './routes/appointment.routes';
 import downloadRoutes from './routes/downloadRoutes';
 import { notFound, errorHandler } from './utils/errorHandler';
 
@@ -48,6 +49,7 @@ app.get('/', (req, res) => {
 app.use('/api/doctors', doctorRoutes);
 app.use('/api/patients', patientRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/appointments', appointmentRoutes);
 app.use('/api/download', downloadRoutes);
 
 // 6. Error handling

@@ -1,14 +1,17 @@
 // src/routes/doctor.routes.ts
 import express from 'express';
-import { registerDoctor, getDoctorProfile, updateDoctorProfile } from '../controllers/doctor.controller';
+import { registerDoctor, getDoctorProfile, updateDoctorProfile, searchDoctors } from '../controllers/doctor.controller';
 // import upload from '../config/multer'; // Local storage
 import { uploadCloud as upload } from '../config/cloudinary'; // Cloud storage
 import { authenticate } from '../config/jwt';
 
 const router = express.Router();
 
+// Public routes
+router.get('/search', searchDoctors); // Search doctors for booking appointments
+
 // Public route - doctor registration
-router.post('/register', 
+router.post('/register',
   upload.fields([
     { name: 'profilePhoto', maxCount: 1 },
     { name: 'licenseDocument', maxCount: 1 },

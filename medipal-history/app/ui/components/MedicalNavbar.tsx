@@ -12,8 +12,6 @@ import {
   Bell,
   User,
   LogOut,
-  Moon,
-  Sun,
 } from "lucide-react";
 import {
   Menu as MuiMenu,
@@ -81,18 +79,13 @@ const notifications: Notification[] = [
 export function MedicalNavbar() {
   const pathname = usePathname();
   const [notificationAnchorEl, setNotificationAnchorEl] = useState<null | HTMLElement>(null);
-  const [unreadCount, setUnreadCount] = useState<number | null>(null);
-  const [theme, setTheme] = useState<'light' | 'dark' | null>(null);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [role, setRole] = useState<string | null>(null);
 
-  // Initialize theme and notifications after mount (client only)
+  // Initialize notifications and auth state
   useEffect(() => {
-    const savedTheme = typeof window !== 'undefined' ? (localStorage.getItem('theme') as 'light' | 'dark' | null) : null;
-    // Force light mode by default
-    setTheme(savedTheme || 'light');
     setUnreadCount(notifications.filter(n => !n.read).length);
     
     // Check if user is logged in
@@ -100,21 +93,7 @@ export function MedicalNavbar() {
     const userRole = typeof window !== 'undefined' ? localStorage.getItem('role') : null;
     setIsLoggedIn(!!token);
     setRole(userRole);
-    
-    setMounted(true);
   }, []);
-
-  // Apply theme changes
-  useEffect(() => {
-    if (theme) {
-      document.documentElement.classList.toggle('dark', theme === 'dark');
-      localStorage.setItem('theme', theme);
-    }
-  }, [theme]);
-
-  const toggleTheme = () => {
-    if (theme) setTheme(theme === 'dark' ? 'light' : 'dark');
-  };
 
   const isActive = (path: string) => pathname === path;
 
@@ -131,28 +110,28 @@ export function MedicalNavbar() {
     setMobileOpen(!mobileOpen);
   };
 
-  // MUI theme with custom medical colors
+  // MUI theme with custom medical colors (light mode only)
   const muiTheme = createTheme({
     palette: {
-      mode: theme || 'light',
+      mode: 'light',
       primary: {
-        main: theme === 'dark' ? '#2E7D32' : '#2A7F62',
+        main: '#2A7F62',
       },
       secondary: {
-        main: theme === 'dark' ? '#1E3A4D' : '#3A5E6D',
+        main: '#3A5E6D',
       },
       error: {
-        main: theme === 'dark' ? '#FF5252' : '#D32F2F',
+        main: '#D32F2F',
       },
       success: {
-        main: theme === 'dark' ? '#4CAF50' : '#388E3C',
+        main: '#388E3C',
       },
       background: {
-        default: theme === 'dark' ? '#121212' : '#FFFFFF',
-        paper: theme === 'dark' ? '#1E1E1E' : '#F5F9F8',
+        default: '#FFFFFF',
+        paper: '#F5F9F8',
       },
       text: {
-        primary: theme === 'dark' ? '#E0E0E0' : '#2D3748',
+        primary: '#2D3748',
       },
     },
     components: {
@@ -182,7 +161,7 @@ export function MedicalNavbar() {
     <Box 
       sx={{ 
         width: 250,
-        backgroundColor: theme === "dark" ? "#1E1E1E" : "#F5F9F8",
+        backgroundColor: '#F5F9F8',
         height: '100%',
         padding: '20px 0'
       }}
@@ -195,8 +174,8 @@ export function MedicalNavbar() {
             sx={{
               '&:hover': {
                 backgroundColor: isActive(item.path) 
-                  ? (theme === "dark" ? "#2E7D32" : "#2A7F62") + '20'
-                  : (theme === "dark" ? "#2E7D32" : "#2A7F62") + '10',
+                  ? '#2A7F6220'
+                  : '#2A7F6210',
               },
             }}
           >
@@ -206,10 +185,10 @@ export function MedicalNavbar() {
               onClick={handleDrawerToggle}
               sx={{
                 color: isActive(item.path) 
-                  ? (theme === "dark" ? "#4CAF50" : "#2A7F62")
-                  : (theme === "dark" ? "#E0E0E0" : "#2D3748"),
+                  ? '#2A7F62'
+                  : '#2D3748',
                 backgroundColor: isActive(item.path) 
-                  ? (theme === "dark" ? "#2E7D32" : "#2A7F62") + '20'
+                  ? '#2A7F6220'
                   : 'transparent',
                 padding: '12px 24px'
               }}
@@ -220,15 +199,10 @@ export function MedicalNavbar() {
         ))}
       </List>
       <Divider sx={{ 
-        backgroundColor: theme === "dark" ? "#424242" : "#E2E8F0"
+        backgroundColor: '#E2E8F0'
       }} />
     </Box>
   );
-
-  if (!mounted || theme === null || unreadCount === null) {
-    // Prevent hydration mismatch by not rendering until client values are set
-    return null;
-  }
 
   return (
     <MuiThemeProvider theme={muiTheme}>
@@ -302,11 +276,11 @@ export function MedicalNavbar() {
         width: 360,
         maxHeight: 400,
         mt: 1.5,
-        backgroundColor: theme === "dark" ? "#1E1E1E" : "#FFFFFF",
+        backgroundColor: '#FFFFFF',
       }
     }}
   >
-    <div className={`p-4 border-b ${theme === "dark" ? "border-[#424242]" : "border-[#E2E8F0]"}`}>
+    <div className="p-4 border-b border-[#E2E8F0]">
       <h3 className="font-semibold">Notifications</h3>
     </div>
     <div className="max-h-80 overflow-auto">
@@ -319,7 +293,7 @@ export function MedicalNavbar() {
           <MenuItem
             key={notification.id}
             onClick={handleNotificationClose}
-            className={`border-b ${theme === "dark" ? "border-[#424242] hover:bg-[#2A2A2A]" : "border-[#E2E8F0] hover:bg-gray-50"}`}
+            className="border-b border-[#E2E8F0] hover:bg-gray-50"
           >
             <div className="w-full py-2">
               <div className="flex justify-between items-start">
@@ -339,7 +313,7 @@ export function MedicalNavbar() {
       )}
     </div>
     {notifications.length > 0 && (
-      <div className={`p-2 border-t ${theme === "dark" ? "border-[#424242]" : "border-[#E2E8F0]"}`}>
+      <div className="p-2 border-t border-[#E2E8F0]">
         <Button 
           fullWidth 
           size="small"
@@ -366,7 +340,8 @@ export function MedicalNavbar() {
                     sx={{
                       width: 36,
                       height: 36,
-                      bgcolor: '#2A7F62',
+                      bgcolor: '#E2E8F0',
+                      color: '#2D3748',
                       fontSize: '0.875rem'
                     }}
                   >
@@ -414,7 +389,7 @@ export function MedicalNavbar() {
             '& .MuiDrawer-paper': { 
               boxSizing: 'border-box', 
               width: 250,
-              backgroundColor: theme === "dark" ? "#1E1E1E" : "#F5F9F8"
+              backgroundColor: '#F5F9F8'
             },
           }}
         >

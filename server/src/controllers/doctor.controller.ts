@@ -406,3 +406,40 @@ export const updateDoctorProfile = async (req: Request, res: Response) => {
     return res.status(500).json({ success: false, message: 'Failed to update profile' });
   }
 };
+
+// Search/List all doctors (for patients to book appointments)
+export const searchDoctors = async (req: Request, res: Response) => {
+  try {
+    const { search, specialization, city } = req.query;
+    
+    let query: any = {}; // Show all doctors (change to { isVerified: true } in production)
+    
+    if (search) {
+      query.$or = [
+        { fullName: { $regex: search, $options: 'i' } },
+        { hospital: { $regex: search, $options: 'i' } }
+      ];
+    }
+    
+    if (specialization) {
+      query.specialization = { $in: [specialization] };
+    }
+    
+    if (city) {
+      query.city = { $regex: city, $options: 'i' };
+    }
+    
+    const doctors = await Doctor.find(query)
+      .select('-password -licenseDocument -degreeDocument -citizenshipDocument -citizenshipNumber -citizenshipIssuedDistrict')
+      .sort({ fullName: 1 });
+    
+    return res.json({ 
+      success: true, 
+      data: doctors,
+      count: doctors.length
+    });
+  } catch (error) {
+    console.error('Error searching doctors:', error);
+    return res.status(500).json({ success: false, message: 'Failed to search doctors' });
+  }
+};

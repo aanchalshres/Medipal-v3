@@ -88,71 +88,40 @@ export default function DoctorAppointmentsPage() {
           setDoctorName(profileData.user.fullName);
         }
 
-        // Sample appointments data (replace with API call)
-        const sampleAppointments: Appointment[] = [
-          {
-            id: "1",
-            date: "2024-12-28",
-            time: "10:00 AM",
-            patientId: "P12345",
-            patientName: "Rajesh Kumar Sharma",
-            patientPhone: "+977-9841234567",
-            appointmentType: "Follow-up",
-            status: "Pending",
-            reason: "Regular heart checkup after previous consultation",
-          },
-          {
-            id: "2",
-            date: "2024-12-25",
-            time: "2:30 PM",
-            patientId: "P12346",
-            patientName: "Sita Devi Thapa",
-            patientPhone: "+977-9841234568",
-            appointmentType: "General Consultation",
-            status: "Approved",
-            reason: "High blood sugar levels, need medication review",
-          },
-          {
-            id: "3",
-            date: "2024-12-30",
-            time: "11:00 AM",
-            patientId: "P12347",
-            patientName: "Ram Bahadur Gurung",
-            patientPhone: "+977-9841234569",
-            appointmentType: "Consultation",
-            status: "Pending",
-            reason: "Persistent cough and fever",
-          },
-          {
-            id: "4",
-            date: "2024-12-23",
-            time: "3:00 PM",
-            patientId: "P12348",
-            patientName: "Maya Shrestha",
-            patientPhone: "+977-9841234570",
-            appointmentType: "Follow-up",
-            status: "Completed",
-            reason: "Back pain follow-up after physiotherapy",
-            notes: "Patient showing improvement. Advised to continue exercises.",
-          },
-          {
-            id: "5",
-            date: "2025-01-05",
-            time: "9:30 AM",
-            patientId: "P12349",
-            patientName: "Binod Kafle",
-            patientPhone: "+977-9841234571",
-            appointmentType: "General Consultation",
-            status: "Pending",
-            reason: "Headache examination and consultation",
-          },
-        ];
+        // Fetch appointments from API
+        const appointmentsResponse = await fetch('http://localhost:5000/api/appointments/doctor/list', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const appointmentsData = await appointmentsResponse.json();
 
-        setAppointments(sampleAppointments);
-        setFilteredAppointments(sampleAppointments);
+        if (appointmentsData?.success && appointmentsData?.data) {
+          // Transform data to match interface
+          const transformedAppointments = appointmentsData.data.map((apt: any) => ({
+            id: apt._id,
+            date: new Date(apt.date).toISOString().split('T')[0],
+            time: apt.time,
+            patientId: apt.patientId,
+            patientName: apt.patientName,
+            patientPhone: apt.patientPhone,
+            appointmentType: apt.appointmentType,
+            status: apt.status,
+            reason: apt.reason,
+            notes: apt.notes
+          }));
+          setAppointments(transformedAppointments);
+          setFilteredAppointments(transformedAppointments);
+        }
+
+        setLoading(false);
+
         setLoading(false);
       } catch (error) {
         console.error("Error fetching data:", error);
+        setSnackbar({
+          open: true,
+          message: "Failed to load appointments",
+          severity: "error",
+        });
         setLoading(false);
       }
     };
@@ -181,26 +150,62 @@ export default function DoctorAppointmentsPage() {
     setFilteredAppointments(filtered);
   }, [searchTerm, filterStatus, appointments]);
 
+  const updateAppointmentStatus = async (id: string, status: string, successMessage: string) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setSnackbar({
+          open: true,
+          message: "Please login to update appointments",
+          severity: "error",
+        });
+        return;
+      }
+
+      const response = await fetch(`http://localhost:5000/api/appointments/${id}/status`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Update local state
+        setAppointments(
+          appointments.map((apt) => (apt.id === id ? { ...apt, status: status as any } : apt))
+        );
+        setSnackbar({
+          open: true,
+          message: successMessage,
+          severity: "success",
+        });
+      } else {
+        setSnackbar({
+          open: true,
+          message: data.message || "Failed to update appointment",
+          severity: "error",
+        });
+      }
+    } catch (error) {
+      console.error("Error updating appointment:", error);
+      setSnackbar({
+        open: true,
+        message: "Failed to update appointment. Please try again.",
+        severity: "error",
+      });
+    }
+  };
+
   const handleApprove = (id: string) => {
-    setAppointments(
-      appointments.map((apt) => (apt.id === id ? { ...apt, status: "Approved" as const } : apt))
-    );
-    setSnackbar({
-      open: true,
-      message: "Appointment approved successfully!",
-      severity: "success",
-    });
+    updateAppointmentStatus(id, "Approved", "Appointment approved successfully!");
   };
 
   const handleMarkCompleted = (id: string) => {
-    setAppointments(
-      appointments.map((apt) => (apt.id === id ? { ...apt, status: "Completed" as const } : apt))
-    );
-    setSnackbar({
-      open: true,
-      message: "Appointment marked as completed!",
-      severity: "success",
-    });
+    updateAppointmentStatus(id, "Completed", "Appointment marked as completed!");
   };
 
   const handleViewAppointment = (appointment: Appointment) => {
