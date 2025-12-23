@@ -1,5 +1,5 @@
 import express from 'express';
-import { registerPatient, getPatientProfile, updatePatientProfile } from '../controllers/patient.controller';
+import { registerPatient, getPatientProfile, updatePatientProfile, getPatientConsultations } from '../controllers/patient.controller';
 // import upload from '../config/multer'; // Local storage
 import { uploadCloud as upload } from '../config/cloudinary'; // Cloud storage
 import { authenticate } from '../config/jwt';
@@ -57,5 +57,11 @@ router.get('/dashboard', authenticate, (req, res) => {
     message: 'Patient dashboard data' 
   });
 });
+
+// Patient: list own consultations
+router.get('/consultations', authenticate, getPatientConsultations);
+
+// Consent management (patient only)
+// Consent/QR routes removed as part of revert
 
 export default router;

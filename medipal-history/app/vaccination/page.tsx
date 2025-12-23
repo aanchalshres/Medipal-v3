@@ -56,6 +56,7 @@ import {
   Divider
 } from "@mui/material";
 import { v4 as uuidv4 } from 'uuid';
+import RequireAuth from "../ui/components/RequireAuth";
 
 interface Vaccination {
   id: string;
@@ -87,7 +88,164 @@ interface UpcomingVaccination {
   reason: string;
 }
 
+// Reusable components for sidebar sections
+const VaccinationStats = ({ stats }: { stats: any }) => (
+  <Card sx={{ boxShadow: 2 }}>
+    <CardHeader 
+      title={
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <TrendingUpIcon sx={{ color: '#2A7F62' }} />
+          <Typography variant="h6">Vaccination Summary</Typography>
+        </Box>
+      }
+    />
+    <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+      <Box textAlign="center">
+        <Typography variant="h3" color="#2A7F62" fontWeight="bold">
+          {stats.total}
+        </Typography>
+        <Typography variant="body2" color="text.secondary" mt={1}>
+          Completed Vaccines
+        </Typography>
+      </Box>
+      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+        <Box sx={{ 
+          p: 2, 
+          bgcolor: '#fff8e1', 
+          borderRadius: 1,
+          border: '1px solid #ffecb3',
+          textAlign: 'center'
+        }}>
+          <Typography variant="h5" color="#ff9800" fontWeight="bold">
+            {stats.due}
+          </Typography>
+          <Typography variant="caption" color="#ff9800">
+            Due Soon
+          </Typography>
+        </Box>
+        <Box sx={{ 
+          p: 2, 
+          bgcolor: '#e8f5e9', 
+          borderRadius: 1,
+          border: '1px solid #c8e6c9',
+          textAlign: 'center'
+        }}>
+          <Typography variant="h5" color="#2A7F62" fontWeight="bold">
+            {stats.protected}
+          </Typography>
+          <Typography variant="caption" color="#2A7F62">
+            Protected
+          </Typography>
+        </Box>
+      </Box>
+    </CardContent>
+  </Card>
+);
+
+const UpcomingVaccinations = ({ 
+  upcoming, 
+  getPriorityColor 
+}: { 
+  upcoming: UpcomingVaccination[], 
+  getPriorityColor: (priority: string) => any 
+}) => (
+  <Card sx={{ boxShadow: 2 }}>
+    <CardHeader
+      title={
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <ClockIcon sx={{ color: '#2A7F62' }} />
+          <Typography variant="h6" color="#2A7F62">
+            Upcoming Due
+          </Typography>
+        </Box>
+      }
+    />
+    <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      {upcoming.map((item) => {
+        const priorityColor = getPriorityColor(item.priority);
+        return (
+          <Box 
+            key={item.id}
+            sx={{ 
+              p: 2, 
+              bgcolor: priorityColor.bg, 
+              borderRadius: 1,
+              border: `1px solid ${priorityColor.border}`
+            }}
+          >
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+              <Typography fontWeight="medium" color={priorityColor.text}>
+                {item.vaccine}
+              </Typography>
+              <Box sx={{ 
+                px: 1,
+                py: 0.5,
+                borderRadius: 1,
+                bgcolor: priorityColor.bg,
+                color: priorityColor.text,
+                border: `1px solid ${priorityColor.border}`,
+                fontSize: '0.75rem'
+              }}>
+                {item.priority.toUpperCase()}
+              </Box>
+            </Box>
+            <Typography variant="body2" color={priorityColor.text}>
+              Due: {item.dueDate}
+            </Typography>
+            <Typography variant="caption" color={priorityColor.text} mt={0.5}>
+              {item.reason}
+            </Typography>
+          </Box>
+        );
+      })}
+    </CardContent>
+  </Card>
+);
+
+const QuickActions = ({ onAddVaccination, isDoctor }: { onAddVaccination: () => void, isDoctor: boolean }) => (
+  <Card sx={{ boxShadow: 2 }}>
+    <CardHeader title="Quick Actions" />
+    <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <Button 
+        variant="outlined" 
+        fullWidth 
+        onClick={() => window.print()}
+        startIcon={<PrinterIcon />}
+        sx={{ color: '#2A7F62', borderColor: '#2A7F62' }}
+      >
+        Print Vaccination Card
+      </Button>
+      <Button 
+        variant="outlined" 
+        fullWidth 
+        onClick={() => alert("Generating QR code...")}
+        startIcon={<QrCodeIcon />}
+        sx={{ color: '#2A7F62', borderColor: '#2A7F62' }}
+      >
+        Digital Certificate
+      </Button>
+      {isDoctor && (
+        <Button 
+          variant="contained" 
+          fullWidth 
+          onClick={onAddVaccination}
+          startIcon={<PlusIcon />}
+          sx={{ bgcolor: '#2A7F62', '&:hover': { bgcolor: '#1e6b50' } }}
+        >
+          Schedule New Vaccine
+        </Button>
+      )}
+    </CardContent>
+  </Card>
+);
+
 const Vaccinations = () => {
+  const [role, setRole] = useState<string | null>(null);
+  const isDoctor = role === 'doctor';
+  useEffect(() => {
+    const r = typeof window !== 'undefined' ? localStorage.getItem('role') : null;
+    setRole(r);
+  }, []);
   const isMobile = useMediaQuery((theme: Theme) => theme.breakpoints.down('md'));
   const [mobileOpen, setMobileOpen] = useState(false);
   
@@ -360,12 +518,13 @@ const Vaccinations = () => {
     <Box>
       <VaccinationStats stats={stats} />
       <UpcomingVaccinations upcoming={upcomingVaccinations} getPriorityColor={getPriorityColor} />
-      <QuickActions onAddVaccination={handleAddVaccination} />
+      <QuickActions onAddVaccination={handleAddVaccination} isDoctor={isDoctor} />
     </Box>
   );
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#f5faf5' }}>
+    <RequireAuth allowedRoles={["doctor", "patient"]}>
+      <div className="min-h-screen" style={{ backgroundColor: '#f5faf5' }}>
       {/* Header */}
       <Box sx={{ 
         bgcolor: 'white', 
@@ -394,19 +553,21 @@ const Vaccinations = () => {
                 Vaccination Management
               </Typography>
             </Box>
-            <Button 
-              variant="contained" 
-              startIcon={<PlusIcon />}
-              onClick={handleAddVaccination}
-              sx={{
-                bgcolor: '#2A7F62',
-                '&:hover': { bgcolor: '#1e6b50' },
-                color: 'white',
-                whiteSpace: 'nowrap'
-              }}
-            >
-              {isMobile ? 'Add' : 'Add Vaccination'}
-            </Button>
+            {isDoctor && (
+              <Button 
+                variant="contained" 
+                startIcon={<PlusIcon />}
+                onClick={handleAddVaccination}
+                sx={{
+                  bgcolor: '#2A7F62',
+                  '&:hover': { bgcolor: '#1e6b50' },
+                  color: 'white',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                {isMobile ? 'Add' : 'Add Vaccination'}
+              </Button>
+            )}
           </Box>
         </Box>
       </Box>
@@ -443,18 +604,20 @@ const Vaccinations = () => {
         <Card sx={{ boxShadow: 2 }}>
           <CardContent>
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: '1 1 100%' }}>
-                <Typography variant="body2">Patient:</Typography>
-                <Select
-                  value={selectedPatient}
-                  onChange={handlePatientChange}
-                  size="small"
-                  sx={{ flex: 1 }}
-                >
-                  <MenuItem value="john-doe">John Doe (#12345)</MenuItem>
-                  <MenuItem value="jane-roe">Jane Roe (#67890)</MenuItem>
-                </Select>
-              </Box>
+              {isDoctor && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: '1 1 100%' }}>
+                  <Typography variant="body2">Patient:</Typography>
+                  <Select
+                    value={selectedPatient}
+                    onChange={handlePatientChange}
+                    size="small"
+                    sx={{ flex: 1 }}
+                  >
+                    <MenuItem value="john-doe">John Doe (#12345)</MenuItem>
+                    <MenuItem value="jane-roe">Jane Roe (#67890)</MenuItem>
+                  </Select>
+                </Box>
+              )}
 
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: '1 1 45%' }}>
                 <FilterIcon fontSize="small" color="action" />
@@ -754,7 +917,7 @@ const Vaccinations = () => {
           <Box sx={{ display: { xs: 'none', md: 'flex' }, flexDirection: 'column', gap: 3 }}>
             <VaccinationStats stats={stats} />
             <UpcomingVaccinations upcoming={upcomingVaccinations} getPriorityColor={getPriorityColor} />
-            <QuickActions onAddVaccination={handleAddVaccination} />
+            <QuickActions onAddVaccination={handleAddVaccination} isDoctor={isDoctor} />
           </Box>
         </Box>
       </Box>
@@ -872,157 +1035,9 @@ const Vaccinations = () => {
           {snackbarMessage}
         </Alert>
       </Snackbar>
-    </div>
+      </div>
+    </RequireAuth>
   );
 };
-
-// Reusable components for sidebar sections
-const VaccinationStats = ({ stats }: { stats: any }) => (
-  <Card sx={{ boxShadow: 2 }}>
-    <CardHeader 
-      title={
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <TrendingUpIcon sx={{ color: '#2A7F62' }} />
-          <Typography variant="h6">Vaccination Summary</Typography>
-        </Box>
-      }
-    />
-    <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      <Box textAlign="center">
-        <Typography variant="h3" color="#2A7F62" fontWeight="bold">
-          {stats.total}
-        </Typography>
-        <Typography variant="body2" color="text.secondary" mt={1}>
-          Completed Vaccines
-        </Typography>
-      </Box>
-      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-        <Box sx={{ 
-          p: 2, 
-          bgcolor: '#fff8e1', 
-          borderRadius: 1,
-          border: '1px solid #ffecb3',
-          textAlign: 'center'
-        }}>
-          <Typography variant="h5" color="#ff9800" fontWeight="bold">
-            {stats.due}
-          </Typography>
-          <Typography variant="caption" color="#ff9800">
-            Due Soon
-          </Typography>
-        </Box>
-        <Box sx={{ 
-          p: 2, 
-          bgcolor: '#e8f5e9', 
-          borderRadius: 1,
-          border: '1px solid #c8e6c9',
-          textAlign: 'center'
-        }}>
-          <Typography variant="h5" color="#2A7F62" fontWeight="bold">
-            {stats.protected}
-          </Typography>
-          <Typography variant="caption" color="#2A7F62">
-            Protected
-          </Typography>
-        </Box>
-      </Box>
-    </CardContent>
-  </Card>
-);
-
-const UpcomingVaccinations = ({ 
-  upcoming, 
-  getPriorityColor 
-}: { 
-  upcoming: UpcomingVaccination[], 
-  getPriorityColor: (priority: string) => any 
-}) => (
-  <Card sx={{ boxShadow: 2 }}>
-    <CardHeader
-      title={
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <ClockIcon sx={{ color: '#2A7F62' }} />
-          <Typography variant="h6" color="#2A7F62">
-            Upcoming Due
-          </Typography>
-        </Box>
-      }
-    />
-    <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-      {upcoming.map((item) => {
-        const priorityColor = getPriorityColor(item.priority);
-        return (
-          <Box 
-            key={item.id}
-            sx={{ 
-              p: 2, 
-              bgcolor: priorityColor.bg, 
-              borderRadius: 1,
-              border: `1px solid ${priorityColor.border}`
-            }}
-          >
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-              <Typography fontWeight="medium" color={priorityColor.text}>
-                {item.vaccine}
-              </Typography>
-              <Box sx={{ 
-                px: 1,
-                py: 0.5,
-                borderRadius: 1,
-                bgcolor: priorityColor.bg,
-                color: priorityColor.text,
-                border: `1px solid ${priorityColor.border}`,
-                fontSize: '0.75rem'
-              }}>
-                {item.priority.toUpperCase()}
-              </Box>
-            </Box>
-            <Typography variant="body2" color={priorityColor.text}>
-              Due: {item.dueDate}
-            </Typography>
-            <Typography variant="caption" color={priorityColor.text} mt={0.5}>
-              {item.reason}
-            </Typography>
-          </Box>
-        );
-      })}
-    </CardContent>
-  </Card>
-);
-
-const QuickActions = ({ onAddVaccination }: { onAddVaccination: () => void }) => (
-  <Card sx={{ boxShadow: 2 }}>
-    <CardHeader title="Quick Actions" />
-    <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-      <Button 
-        variant="outlined" 
-        fullWidth 
-        onClick={() => window.print()}
-        startIcon={<PrinterIcon />}
-        sx={{ color: '#2A7F62', borderColor: '#2A7F62' }}
-      >
-        Print Vaccination Card
-      </Button>
-      <Button 
-        variant="outlined" 
-        fullWidth 
-        onClick={() => alert("Generating QR code...")}
-        startIcon={<QrCodeIcon />}
-        sx={{ color: '#2A7F62', borderColor: '#2A7F62' }}
-      >
-        Digital Certificate
-      </Button>
-      <Button 
-        variant="contained" 
-        fullWidth 
-        onClick={onAddVaccination}
-        startIcon={<PlusIcon />}
-        sx={{ bgcolor: '#2A7F62', '&:hover': { bgcolor: '#1e6b50' } }}
-      >
-        Schedule New Vaccine
-      </Button>
-    </CardContent>
-  </Card>
-);
 
 export default Vaccinations;

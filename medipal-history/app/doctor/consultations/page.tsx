@@ -34,6 +34,7 @@ import {
   MedicalServices as MedicalIcon,
 } from "@mui/icons-material";
 import { format } from "date-fns";
+import RequireAuth from "../../ui/components/RequireAuth";
 
 interface Consultation {
   id: string;
@@ -45,6 +46,7 @@ interface Consultation {
   diagnosis: string;
   prescription: string[];
   notes: string;
+  followUpRequired?: boolean;
 }
 
 export default function ConsultationsPage() {
@@ -58,12 +60,12 @@ export default function ConsultationsPage() {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [newConsultation, setNewConsultation] = useState({
     patientId: "",
-    patientName: "",
     hospitalName: "",
     chiefComplaint: "",
     diagnosis: "",
     prescription: "",
     notes: "",
+    followUpRequired: false,
   });
 
   useEffect(() => {
@@ -85,67 +87,30 @@ export default function ConsultationsPage() {
           setDoctorName(profileData.user.fullName);
         }
 
-        // Sample consultations data (replace with API call)
-        const sampleConsultations: Consultation[] = [
-          {
-            id: "1",
-            date: "2024-12-20",
-            patientId: "P12345",
-            patientName: "Rajesh Kumar Sharma",
-            hospitalName: "City General Hospital",
-            chiefComplaint: "Chest pain and shortness of breath",
-            diagnosis: "Hypertension, Stage 1",
-            prescription: ["Amlodipine 5mg - Once daily", "Aspirin 75mg - Once daily"],
-            notes: "Follow-up in 2 weeks. Monitor blood pressure daily.",
-          },
-          {
-            id: "2",
-            date: "2024-12-20",
-            patientName: "Sita Devi Thapa",
-            patientId: "P12346",
-            hospitalName: "Kathmandu Medical Center",
-            chiefComplaint: "High blood sugar levels",
-            diagnosis: "Type 2 Diabetes Mellitus",
-            prescription: ["Metformin 500mg - Twice daily", "Lifestyle modification advised"],
-            notes: "Dietary counseling provided. Recheck HbA1c in 3 months.",
-          },
-          {
-            id: "3",
-            date: "2024-12-19",
-            patientId: "P12347",
-            patientName: "Ram Bahadur Gurung",
-            hospitalName: "Patan Hospital",
-            chiefComplaint: "Fever and cough for 5 days",
-            diagnosis: "Upper Respiratory Tract Infection",
-            prescription: ["Azithromycin 500mg - Once daily for 3 days", "Paracetamol 500mg - SOS"],
-            notes: "Advised rest and plenty of fluids. Return if symptoms worsen.",
-          },
-          {
-            id: "4",
-            date: "2024-12-18",
-            patientId: "P12348",
-            patientName: "Maya Shrestha",
-            hospitalName: "Grande International Hospital",
-            chiefComplaint: "Lower back pain",
-            diagnosis: "Lumbar Muscle Strain",
-            prescription: ["Diclofenac 50mg - Twice daily", "Physiotherapy sessions recommended"],
-            notes: "Avoid heavy lifting. Apply hot compress.",
-          },
-          {
-            id: "5",
-            date: "2024-12-17",
-            patientId: "P12349",
-            patientName: "Binod Kafle",
-            hospitalName: "Manipal Teaching Hospital",
-            chiefComplaint: "Persistent headache",
-            diagnosis: "Tension-type Headache",
-            prescription: ["Paracetamol 500mg - SOS", "Stress management techniques"],
-            notes: "Advised adequate sleep and hydration.",
-          },
-        ];
-
-        setConsultations(sampleConsultations);
-        setFilteredConsultations(sampleConsultations);
+        // Fetch consultations for this doctor
+        const resp = await fetch("http://localhost:5000/api/doctors/consultations", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await resp.json();
+        if (resp.ok && data?.success) {
+          const items: Consultation[] = (data.data || []).map((d: any) => ({
+            id: d.id,
+            date: d.date,
+            patientId: d.patientId,
+            patientName: d.patientName,
+            hospitalName: d.hospitalName,
+            chiefComplaint: d.chiefComplaint || "",
+            diagnosis: d.diagnosis || "",
+            prescription: d.prescription || [],
+            notes: d.notes || "",
+            followUpRequired: !!d.followUpRequired,
+          }));
+          setConsultations(items);
+          setFilteredConsultations(items);
+        } else {
+          setConsultations([]);
+          setFilteredConsultations([]);
+        }
         setLoading(false);
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -178,39 +143,71 @@ export default function ConsultationsPage() {
     setViewDialogOpen(true);
   };
 
-  const handleAddConsultation = () => {
+  const handleAddConsultation = async () => {
     if (
       !newConsultation.patientId ||
-      !newConsultation.patientName ||
       !newConsultation.chiefComplaint ||
       !newConsultation.diagnosis
     ) {
       alert("Please fill all required fields");
       return;
     }
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        alert("Authentication required");
+        return;
+      }
 
-    const consultation: Consultation = {
-      id: Date.now().toString(),
-      date: new Date().toISOString().split("T")[0],
-      patientId: newConsultation.patientId,
-      patientName: newConsultation.patientName,
-      hospitalName: newConsultation.hospitalName,
-      chiefComplaint: newConsultation.chiefComplaint,
-      diagnosis: newConsultation.diagnosis,
-      prescription: newConsultation.prescription.split("\n").filter((p) => p.trim()),
-      notes: newConsultation.notes,
-    };
+      const resp = await fetch("http://localhost:5000/api/doctors/consultations", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          patientId: newConsultation.patientId,
+          date: new Date().toISOString(),
+          diagnosis: newConsultation.diagnosis,
+          notes: newConsultation.notes,
+          prescriptions: newConsultation.prescription.split("\n").filter((p) => p.trim()),
+          hospital: newConsultation.hospitalName,
+          followUpRequired: newConsultation.followUpRequired,
+        }),
+      });
+      const data = await resp.json();
+      if (!resp.ok || !data?.success) {
+        throw new Error(data?.message || "Failed to add consultation");
+      }
 
-    setConsultations([consultation, ...consultations]);
+      const saved = data.data;
+      const consultation: Consultation = {
+        id: saved._id,
+        date: saved.date,
+        patientId: newConsultation.patientId,
+        patientName: saved.patientName || "",
+        hospitalName: newConsultation.hospitalName,
+        chiefComplaint: newConsultation.chiefComplaint,
+        diagnosis: newConsultation.diagnosis,
+        prescription: newConsultation.prescription.split("\n").filter((p) => p.trim()),
+        notes: newConsultation.notes,
+        followUpRequired: !!newConsultation.followUpRequired,
+      };
+      setConsultations([consultation, ...consultations]);
+    } catch (e) {
+      console.error(e);
+      alert(e instanceof Error ? e.message : "Failed to add consultation");
+      return;
+    }
     setAddDialogOpen(false);
     setNewConsultation({
       patientId: "",
-      patientName: "",
       hospitalName: "",
       chiefComplaint: "",
       diagnosis: "",
       prescription: "",
       notes: "",
+      followUpRequired: false,
     });
   };
 
@@ -223,6 +220,7 @@ export default function ConsultationsPage() {
   }
 
   return (
+    <RequireAuth allowedRoles={["doctor"]}>
     <Box sx={{ backgroundColor: "#F5F9F8", minHeight: "100vh", py: 4, px: { xs: 2, md: 4 } }}>
       {/* Header */}
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 4, flexWrap: "wrap", gap: 2 }}>
@@ -537,15 +535,9 @@ export default function ConsultationsPage() {
               label="Patient ID *"
               value={newConsultation.patientId}
               onChange={(e) => setNewConsultation({ ...newConsultation, patientId: e.target.value })}
-              placeholder="e.g., P12345"
+              placeholder="e.g., MP-<patientNo>YYYYMMDD"
             />
-            <TextField
-              fullWidth
-              label="Patient Name *"
-              value={newConsultation.patientName}
-              onChange={(e) => setNewConsultation({ ...newConsultation, patientName: e.target.value })}
-              placeholder="e.g., Rajesh Kumar"
-            />
+            {/* Patient name is resolved automatically; doctor inputs only Patient ID */}
             <TextField
               fullWidth
               label="Hospital Name"
@@ -553,6 +545,18 @@ export default function ConsultationsPage() {
               onChange={(e) => setNewConsultation({ ...newConsultation, hospitalName: e.target.value })}
               placeholder="e.g., City General Hospital"
             />
+            <FormControl fullWidth>
+              <InputLabel id="followup-label">Follow-up Required?</InputLabel>
+              <Select
+                labelId="followup-label"
+                value={newConsultation.followUpRequired ? 'yes' : 'no'}
+                label="Follow-up Required?"
+                onChange={(e) => setNewConsultation({ ...newConsultation, followUpRequired: e.target.value === 'yes' })}
+              >
+                <MenuItem value="no">No</MenuItem>
+                <MenuItem value="yes">Yes</MenuItem>
+              </Select>
+            </FormControl>
             <TextField
               fullWidth
               label="Chief Complaint *"
@@ -599,5 +603,6 @@ export default function ConsultationsPage() {
         </DialogActions>
       </Dialog>
     </Box>
+    </RequireAuth>
   );
 }

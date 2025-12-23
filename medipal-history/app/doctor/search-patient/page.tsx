@@ -25,6 +25,8 @@ import {
   Fingerprint as FingerprintIcon,
 } from "@mui/icons-material";
 import Link from "next/link";
+import RequireAuth from "../../ui/components/RequireAuth";
+// QR consent flow removed as part of revert
 
 interface PatientInfo {
   patientId: string;
@@ -43,10 +45,11 @@ export default function SearchPatientPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [patientInfo, setPatientInfo] = useState<PatientInfo | null>(null);
+  // Consent/QR scanning removed
 
   const handleSearch = async () => {
     if (!patientId.trim()) {
-      setError("Please enter a Patient ID");
+      setError("Please enter a Patient ID (e.g., MP-XXXXYYYYMMDD).");
       return;
     }
 
@@ -62,37 +65,36 @@ export default function SearchPatientPage() {
         return;
       }
 
-      // TODO: Replace with actual API call
-      // const response = await fetch(`http://localhost:5000/api/doctors/search-patient/${patientId}`, {
-      //   headers: { Authorization: `Bearer ${token}` }
-      // });
-      // const data = await response.json();
-      
-      // Sample data for demonstration
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      if (patientId.toLowerCase().includes("p")) {
-        setPatientInfo({
-          patientId: patientId.toUpperCase(),
-          fullName: "Rajesh Kumar Sharma",
-          dateOfBirth: "1985-05-15",
-          gender: "Male",
-          phoneNumber: "+977-9841234567",
-          email: "rajesh.sharma@email.com",
-          address: "Kathmandu-10, Baneshwor",
-          bloodGroup: "O+",
-          emergencyContact: "+977-9841234568"
-        });
-      } else {
-        setError("Patient not found. Please check the Patient ID and try again.");
+      const response = await fetch(`http://localhost:5000/api/doctors/search-patient/${encodeURIComponent(patientId)}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const result = await response.json();
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.message || 'Search failed');
       }
+      const p = result.data;
+      setPatientInfo({
+        patientId: p.patientId,
+        fullName: p.fullName,
+        dateOfBirth: p.dateOfBirth,
+        gender: p.gender,
+        phoneNumber: p.phoneNumber,
+        email: p.email,
+        address: p.address,
+        bloodGroup: p.bloodGroup,
+        emergencyContact: p.emergencyContact
+      });
+      // History unlocking removed
     } catch (err) {
-      setError("Failed to fetch patient information. Please try again.");
-      console.error(err);
+      const message = err instanceof Error ? err.message : "Failed to fetch patient information. Please try again.";
+      setError(message);
+      console.error('Search patient error:', err);
     } finally {
       setLoading(false);
     }
   };
+
+  // QR/consent flow removed
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
@@ -106,6 +108,7 @@ export default function SearchPatientPage() {
   };
 
   return (
+    <RequireAuth allowedRoles={["doctor"]}>
     <Box
       sx={{
         backgroundColor: colors.background,
@@ -155,7 +158,7 @@ export default function SearchPatientPage() {
           <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
             <TextField
               fullWidth
-              placeholder="e.g., P12345, P98765"
+              placeholder="e.g., MP-<patientNo>YYYYMMDD"
               value={patientId}
               onChange={(e) => setPatientId(e.target.value)}
               onKeyPress={handleKeyPress}
@@ -190,8 +193,11 @@ export default function SearchPatientPage() {
             <strong>Cross-Hospital Access:</strong> This feature allows you to view
             patient medical history from any hospital in the MediPal network.
           </Alert>
+          {/* QR unlock removed */}
         </CardContent>
       </Card>
+
+      {/* QR Dialog removed */}
 
       {/* Error Message */}
       {error && (
@@ -258,7 +264,6 @@ export default function SearchPatientPage() {
             </Box>
 
             <Divider sx={{ my: 3 }} />
-
             {/* Patient Details Grid */}
             <Box
               sx={{
@@ -331,6 +336,8 @@ export default function SearchPatientPage() {
 
             <Divider sx={{ my: 3 }} />
 
+            {/* Authorized History removed */}
+
             {/* Action Button */}
             <Button
               fullWidth
@@ -353,5 +360,6 @@ export default function SearchPatientPage() {
         </Card>
       )}
     </Box>
+    </RequireAuth>
   );
 }

@@ -53,6 +53,7 @@ import {
   CircularProgress
 } from "@mui/material";
 import { v4 as uuidv4 } from 'uuid';
+import RequireAuth from "../ui/components/RequireAuth";
 
 interface Prescription {
   id: string;
@@ -90,6 +91,15 @@ interface DrugInteraction {
 }
 
 const Prescriptions = () => {
+  // Role-based view
+  const [role, setRole] = useState<string | null>(null);
+  const isDoctor = role === 'doctor';
+
+  useEffect(() => {
+    const r = typeof window !== 'undefined' ? localStorage.getItem('role') : null;
+    setRole(r);
+  }, []);
+
   // State for prescriptions data
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
   const [prescriptionHistory, setPrescriptionHistory] = useState<PrescriptionHistory[]>([]);
@@ -352,6 +362,7 @@ const Prescriptions = () => {
   };
 
   return (
+    <RequireAuth allowedRoles={["doctor", "patient"]}>
     <div className="min-h-screen" style={{ backgroundColor: '#f5faf7' }}>
       {/* Header */}
       <Box sx={{ 
@@ -369,8 +380,16 @@ const Prescriptions = () => {
               </Typography>
             </Box>
             <Box sx={{ display: 'flex', gap: 2 }}>
-             
-              
+              {isDoctor && (
+                <Button
+                  variant="contained"
+                  startIcon={<PlusIcon />}
+                  onClick={handleAddPrescription}
+                  sx={{ bgcolor: '#2A7F62', '&:hover': { bgcolor: '#1e6b50' } }}
+                >
+                  Add Prescription
+                </Button>
+              )}
             </Box>
           </Box>
         </Box>
@@ -384,18 +403,20 @@ const Prescriptions = () => {
             <Card sx={{ mb: 3, boxShadow: 2 }}>
               <CardContent>
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Typography variant="body2">Patient:</Typography>
-                    <Select
-                      value={selectedPatient}
-                      onChange={handlePatientChange}
-                      size="small"
-                      sx={{ minWidth: 180 }}
-                    >
-                      <MenuItem value="john-doe">John Doe (#12345)</MenuItem>
-                      <MenuItem value="jane-roe">Jane Roe (#67890)</MenuItem>
-                    </Select>
-                  </Box>
+                  {isDoctor && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Typography variant="body2">Patient:</Typography>
+                      <Select
+                        value={selectedPatient}
+                        onChange={handlePatientChange}
+                        size="small"
+                        sx={{ minWidth: 180 }}
+                      >
+                        <MenuItem value="john-doe">John Doe (#12345)</MenuItem>
+                        <MenuItem value="jane-roe">Jane Roe (#67890)</MenuItem>
+                      </Select>
+                    </Box>
+                  )}
 
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <FilterIcon fontSize="small" color="action" />
@@ -574,6 +595,7 @@ const Prescriptions = () => {
                           </TableCell>
                           <TableCell>
                             <Box sx={{ display: 'flex', gap: 0.5 }}>
+                              {isDoctor && (
                               <IconButton
                                 onClick={() => handleEditPrescription(prescription)}
                                 size="small"
@@ -581,6 +603,8 @@ const Prescriptions = () => {
                               >
                                 <EditIcon fontSize="small" />
                               </IconButton>
+                              )}
+                              {isDoctor && (
                               <IconButton
                                 onClick={() => handleDeletePrescription(prescription.id)}
                                 size="small"
@@ -588,7 +612,8 @@ const Prescriptions = () => {
                               >
                                 <DeleteIcon fontSize="small" />
                               </IconButton>
-                              {prescription.status === "active" && (
+                              )}
+                              {isDoctor && prescription.status === "active" && (
                                 <IconButton
                                   onClick={() => showNotification(`Renewed ${prescription.medication}`, "success")}
                                   size="small"
@@ -833,18 +858,20 @@ const Prescriptions = () => {
                 >
                   Share QR Code
                 </Button>
-                <Button 
-                  variant="contained" 
-                  fullWidth 
-                  onClick={handleAddPrescription}
-                  startIcon={<PlusIcon />}
-                  sx={{ 
-                    bgcolor: '#2A7F62', 
-                    '&:hover': { bgcolor: '#1e6b50' }
-                  }}
-                >
-                  New Prescription
-                </Button>
+                {isDoctor && (
+                  <Button 
+                    variant="contained" 
+                    fullWidth 
+                    onClick={handleAddPrescription}
+                    startIcon={<PlusIcon />}
+                    sx={{ 
+                      bgcolor: '#2A7F62', 
+                      '&:hover': { bgcolor: '#1e6b50' }
+                    }}
+                  >
+                    New Prescription
+                  </Button>
+                )}
               </CardContent>
             </Card>
           </Box>
@@ -1025,6 +1052,7 @@ const Prescriptions = () => {
         </Alert>
       </Snackbar>
     </div>
+    </RequireAuth>
   );
 };
 

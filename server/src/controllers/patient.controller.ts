@@ -3,6 +3,8 @@ import Patient from '../models/patient.model';
 import path from 'path';
 import fs from 'fs';
 import * as bcrypt from 'bcryptjs';
+import Consultation from '../models/consultation.model';
+import Doctor from '../models/doctor.model';
 
 const handleFileUpload = (req: Request, fieldName: string) => {
   if (!req.files) return undefined;
@@ -205,14 +207,14 @@ export const getPatientProfile = async (req: Request, res: Response) => {
       await patient.save();
     }
 
-    // Generate Patient ID in format: MP-<sequential_number><DOB_YYYYMMDD>
-    const dobDate = new Date(patient.dateOfBirth);
-    const dobFormatted = `${dobDate.getFullYear()}${String(dobDate.getMonth() + 1).padStart(2, '0')}${String(dobDate.getDate()).padStart(2, '0')}`;
-    const patientId = `MP-${String(patient.patientNumber).padStart(2, '0')}${dobFormatted}`;
-
     const data = {
       id: patient._id,
-      patientId: patientId,
+      // Generate Patient ID in format: MP-<sequential_number><DOB_YYYYMMDD>
+      patientId: (() => {
+        const dobDate = new Date(patient.dateOfBirth);
+        const dobFormatted = `${dobDate.getFullYear()}${String(dobDate.getMonth() + 1).padStart(2, '0')}${String(dobDate.getDate()).padStart(2, '0')}`;
+        return `MP-${String(patient.patientNumber).padStart(2, '0')}${dobFormatted}`;
+      })(),
       fullName: patient.fullName,
       email: patient.email,
       phone: patient.phone,
@@ -343,5 +345,41 @@ export const updatePatientProfile = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error updating patient profile:', error);
     return res.status(500).json({ success: false, message: 'Failed to update profile' });
+  }
+};
+
+// Get consultations for the logged-in patient
+export const getPatientConsultations = async (req: Request, res: Response) => {
+  try {
+    const user = req.user;
+    if (!user?.id || user.role !== 'patient') {
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+
+    const consults = await Consultation.find({ patientId: user.id })
+      .sort({ date: -1, createdAt: -1 })
+      .lean();
+
+    const doctorIds = Array.from(new Set(consults.map(c => String(c.doctorId))));
+    const docs = await Doctor.find({ _id: { $in: doctorIds } }).select('fullName specialization');
+    const dmap = new Map(docs.map(d => [String(d._id), { name: d.fullName, specialization: Array.isArray((d as any).specialization) ? (d as any).specialization[0] : '' }]));
+
+    const data = consults.map(c => ({
+      id: String(c._id),
+      date: c.date,
+      hospitalName: c.hospital || '',
+      doctorName: dmap.get(String(c.doctorId))?.name || 'Doctor',
+      doctorSpecialization: dmap.get(String(c.doctorId))?.specialization || '',
+      chiefComplaint: '',
+      diagnosis: c.diagnosis || '',
+      prescription: c.prescriptions || [],
+      notes: c.notes || '',
+      status: c.followUpRequired ? 'Follow-up Required' : 'Completed',
+    }));
+
+    return res.json({ success: true, data, count: data.length });
+  } catch (error) {
+    console.error('Error fetching patient consultations:', error);
+    return res.status(500).json({ success: false, message: 'Failed to fetch consultations' });
   }
 };

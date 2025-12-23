@@ -35,6 +35,7 @@ import {
   Assignment
 } from "@mui/icons-material";
 import { format } from "date-fns";
+import RequireAuth from "../ui/components/RequireAuth";
 
 interface Consultation {
   id: string;
@@ -78,92 +79,30 @@ export default function MedicalHistoryPage() {
           setPatientName(profileData.user.fullName);
         }
 
-        // Sample consultations data (in production, fetch from backend)
-        const sampleConsultations: Consultation[] = [
-          {
-            id: "1",
-            date: "2024-12-15",
-            hospitalName: "City General Hospital",
-            doctorName: "Dr. Ramesh Sharma",
-            doctorSpecialization: "Cardiologist",
-            chiefComplaint: "Chest pain and shortness of breath",
-            diagnosis: "Mild angina, requires lifestyle modification",
-            prescription: [
-              "Aspirin 75mg - Once daily after breakfast",
-              "Atorvastatin 20mg - Once daily at bedtime",
-              "Nitroglycerin spray - As needed for chest pain"
-            ],
-            notes: "Advised to follow low-fat diet, regular exercise. Follow-up in 2 weeks.",
-            status: "Follow-up Required"
-          },
-          {
-            id: "2",
-            date: "2024-11-28",
-            hospitalName: "Kathmandu Medical Center",
-            doctorName: "Dr. Sita Thapa",
-            doctorSpecialization: "General Physician",
-            chiefComplaint: "High fever and body ache",
-            diagnosis: "Viral fever with mild dehydration",
-            prescription: [
-              "Paracetamol 500mg - Three times daily after meals",
-              "ORS solution - 200ml every 2 hours",
-              "Complete bed rest for 3 days"
-            ],
-            notes: "Stay hydrated, avoid cold foods. Recovery expected in 5-7 days.",
-            status: "Completed"
-          },
-          {
-            id: "3",
-            date: "2024-11-10",
-            hospitalName: "Patan Hospital",
-            doctorName: "Dr. Krishna Bhattarai",
-            doctorSpecialization: "Orthopedic",
-            chiefComplaint: "Knee pain and swelling",
-            diagnosis: "Osteoarthritis - Grade 2",
-            prescription: [
-              "Ibuprofen 400mg - Twice daily after meals",
-              "Calcium + Vitamin D3 - Once daily",
-              "Hot compress - 15 minutes twice daily"
-            ],
-            notes: "Avoid climbing stairs. Physical therapy recommended.",
-            status: "Completed"
-          },
-          {
-            id: "4",
-            date: "2024-10-22",
-            hospitalName: "Manipal Teaching Hospital",
-            doctorName: "Dr. Binod Kafle",
-            doctorSpecialization: "ENT Specialist",
-            chiefComplaint: "Throat pain and difficulty swallowing",
-            diagnosis: "Acute tonsillitis",
-            prescription: [
-              "Amoxicillin 500mg - Three times daily for 7 days",
-              "Betadine gargle - Three times daily",
-              "Avoid spicy and cold foods"
-            ],
-            notes: "Complete the full course of antibiotics. Return if fever persists.",
-            status: "Completed"
-          },
-          {
-            id: "5",
-            date: "2024-10-05",
-            hospitalName: "Grande International Hospital",
-            doctorName: "Dr. Anita Shrestha",
-            doctorSpecialization: "Dermatologist",
-            chiefComplaint: "Skin rash and itching",
-            diagnosis: "Allergic dermatitis",
-            prescription: [
-              "Cetirizine 10mg - Once daily at night",
-              "Hydrocortisone cream - Apply twice daily",
-              "Avoid synthetic fabrics"
-            ],
-            notes: "Use cotton clothing. Avoid known allergens. Follow-up if rash persists.",
-            status: "Completed"
-          }
-        ];
-
-        setConsultations(sampleConsultations);
-        setFilteredConsultations(sampleConsultations);
+        // Fetch consultations from backend
+        const resp = await fetch('http://localhost:5000/api/patients/consultations', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const list = await resp.json();
+        if (resp.ok && list?.success) {
+          const items: Consultation[] = (list.data || []).map((c: any) => ({
+            id: c.id,
+            date: c.date,
+            hospitalName: c.hospitalName,
+            doctorName: c.doctorName,
+            doctorSpecialization: c.doctorSpecialization,
+            chiefComplaint: c.chiefComplaint || '',
+            diagnosis: c.diagnosis || '',
+            prescription: c.prescription || [],
+            notes: c.notes || '',
+            status: c.status === 'Follow-up Required' ? 'Follow-up Required' : 'Completed',
+          }));
+          setConsultations(items);
+          setFilteredConsultations(items);
+        } else {
+          setConsultations([]);
+          setFilteredConsultations([]);
+        }
         setLoading(false);
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -209,6 +148,7 @@ export default function MedicalHistoryPage() {
   }
 
   return (
+    <RequireAuth allowedRoles={["patient"]}>
     <Box sx={{ 
       backgroundColor: '#F5F9F8', 
       minHeight: '100vh',
@@ -603,5 +543,6 @@ export default function MedicalHistoryPage() {
         </DialogActions>
       </Dialog>
     </Box>
+    </RequireAuth>
   );
 }

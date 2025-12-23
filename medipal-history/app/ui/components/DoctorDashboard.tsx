@@ -88,23 +88,40 @@ const StatCard = ({
   </Paper>
 );
 
-interface Appointment {
+interface AppointmentItem {
   patientName: string;
   time: string;
-  type: string;
-  status: 'upcoming' | 'completed' | 'cancelled';
+  appointmentType: string;
+  status: 'Pending' | 'Approved' | 'Completed' | 'Cancelled';
+  date: string;
+}
+
+interface ConsultationItem {
+  patientId: string;
+  patientName: string;
+  date: string;
+  diagnosis: string;
 }
 
 export default function DoctorDashboard() {
   const [doctorName, setDoctorName] = useState<string>("");
   const [hospitalName, setHospitalName] = useState<string>("");
+  const [todaysAppointments, setTodaysAppointments] = useState<AppointmentItem[]>([]);
+  const [recentConsultations, setRecentConsultations] = useState<ConsultationItem[]>([]);
+  const [stats, setStats] = useState({
+    todayPatients: 0,
+    pendingAppointments: 0,
+    completedToday: 0,
+    totalPatients: 0,
+  });
   const today = format(new Date(), "EEEE, MMMM dd, yyyy");
 
-  // Fetch logged-in doctor profile
+  // Fetch logged-in doctor profile + appointments + consultations
   useEffect(() => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
     const role = typeof window !== 'undefined' ? localStorage.getItem('role') : null;
     if (!token || role !== 'doctor') return;
+    // Profile
     fetch('http://localhost:5000/api/doctors/profile', {
       headers: { Authorization: `Bearer ${token}` }
     })
@@ -120,33 +137,64 @@ export default function DoctorDashboard() {
       }
     })
     .catch(() => {});
+
+    // Appointments for doctor
+    fetch('http://localhost:5000/api/appointments/doctor/list', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(r => r.json())
+      .then(res => {
+        if (res?.success && Array.isArray(res.data)) {
+          const todayStr = format(new Date(), 'yyyy-MM-dd');
+          const items: AppointmentItem[] = res.data
+            .filter((a: any) => a?.date && format(new Date(a.date), 'yyyy-MM-dd') === todayStr)
+            .map((a: any) => ({
+              patientName: a.patientName,
+              time: a.time,
+              appointmentType: a.appointmentType,
+              status: a.status,
+              date: a.date,
+            }));
+          setTodaysAppointments(items);
+          const pending = res.data.filter((a: any) => a.status === 'Pending').length;
+          const completedToday = res.data.filter((a: any) => a.status === 'Completed' && format(new Date(a.date), 'yyyy-MM-dd') === todayStr).length;
+          const totalPatients = new Set(res.data.map((a: any) => a.patientId)).size;
+          setStats(s => ({
+            ...s,
+            todayPatients: items.length,
+            pendingAppointments: pending,
+            completedToday,
+            totalPatients,
+          }));
+        }
+      })
+      .catch(() => {});
+
+    // Recent consultations by doctor
+    fetch('http://localhost:5000/api/doctors/consultations', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(r => r.json())
+      .then(res => {
+        if (res?.success && Array.isArray(res.data)) {
+          const items: ConsultationItem[] = res.data.slice(0, 5).map((c: any) => ({
+            patientId: c.patientId,
+            patientName: c.patientName,
+            date: format(new Date(c.date), 'MMM dd, yyyy'),
+            diagnosis: c.diagnosis || '',
+          }));
+          setRecentConsultations(items);
+        }
+      })
+      .catch(() => {});
   }, []);
-
-  // Sample data - replace with real API calls
-  const todaysAppointments: Appointment[] = [
-    { patientName: "John Doe", time: "09:00 AM", type: "Consultation", status: 'upcoming' },
-    { patientName: "Jane Smith", time: "10:30 AM", type: "Follow-up", status: 'upcoming' },
-    { patientName: "Mike Johnson", time: "02:00 PM", type: "Check-up", status: 'upcoming' },
-  ];
-
-  const recentConsultations = [
-    { patientId: "P12345", patientName: "Sarah Williams", date: "Dec 20, 2024", diagnosis: "Hypertension" },
-    { patientId: "P12346", patientName: "Robert Brown", date: "Dec 20, 2024", diagnosis: "Diabetes checkup" },
-    { patientId: "P12347", patientName: "Emily Davis", date: "Dec 19, 2024", diagnosis: "Common cold" },
-  ];
-
-  const stats = {
-    todayPatients: todaysAppointments.length,
-    pendingAppointments: 3,
-    completedToday: 5,
-    totalPatients: 156
-  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'upcoming': return '#2196f3';
-      case 'completed': return '#4caf50';
-      case 'cancelled': return '#f44336';
+      case 'Pending': return '#2196f3';
+      case 'Approved': return '#1976D2';
+      case 'Completed': return '#4caf50';
+      case 'Cancelled': return '#f44336';
       default: return colors.secondaryText;
     }
   };
@@ -236,7 +284,7 @@ export default function DoctorDashboard() {
                             {apt.patientName}
                           </Typography>
                           <Typography variant="body2" sx={{ color: colors.secondaryText }}>
-                            {apt.time} • {apt.type}
+                            {apt.time} • {apt.appointmentType}
                           </Typography>
                         </Box>
                       </Box>
@@ -272,54 +320,7 @@ export default function DoctorDashboard() {
 
         {/* Quick Actions & Info */}
         <div>
-          <SectionCard title="Quick Actions">
-            <Box className="space-y-2">
-              <Button 
-                fullWidth 
-                variant="contained"
-                component={Link}
-                href="/doctor/search-patient"
-                startIcon={<Search />}
-                sx={{ 
-                  bgcolor: colors.primary,
-                  '&:hover': { bgcolor: '#1e6d54' },
-                  mb: 1,
-                  textTransform: 'none'
-                }}
-              >
-                Search Patient
-              </Button>
-              <Button 
-                fullWidth 
-                variant="outlined"
-                component={Link}
-                href="/doctor/consultations"
-                startIcon={<FileText />}
-                sx={{ 
-                  color: colors.primary,
-                  borderColor: colors.primary,
-                  mb: 1,
-                  textTransform: 'none'
-                }}
-              >
-                View Consultations
-              </Button>
-              <Button 
-                fullWidth 
-                variant="outlined"
-                component={Link}
-                href="/doctor/appointments"
-                startIcon={<Calendar />}
-                sx={{ 
-                  color: colors.primary,
-                  borderColor: colors.primary,
-                  textTransform: 'none'
-                }}
-              >
-                Manage Appointments
-              </Button>
-            </Box>
-          </SectionCard>
+  
 
           <SectionCard title="Recent Consultations">
             <Box className="space-y-3">

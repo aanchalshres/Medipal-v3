@@ -40,6 +40,7 @@ import {
   AccessTime as TimeIcon,
 } from "@mui/icons-material";
 import { format } from "date-fns";
+import RequireAuth from "../../ui/components/RequireAuth";
 
 interface Appointment {
   id: string;
@@ -252,6 +253,7 @@ export default function DoctorAppointmentsPage() {
   }
 
   return (
+    <RequireAuth allowedRoles={["doctor"]}>
     <Box sx={{ backgroundColor: "#F5F9F8", minHeight: "100vh", py: 4, px: { xs: 2, md: 4 } }}>
       {/* Header */}
       <Box sx={{ mb: 4 }}>
@@ -631,5 +633,6 @@ export default function DoctorAppointmentsPage() {
         </Alert>
       </Snackbar>
     </Box>
+    </RequireAuth>
   );
 }

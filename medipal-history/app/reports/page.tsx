@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Box,
   Typography,
@@ -38,6 +38,7 @@ import {
   FolderOpen
 } from "@mui/icons-material";
 import { format } from "date-fns";
+import RequireAuth from "../ui/components/RequireAuth";
 
 interface Report {
   id: string;
@@ -51,6 +52,12 @@ interface Report {
 }
 
 export default function ReportsPage() {
+  const [role, setRole] = useState<string | null>(null);
+  const isDoctor = role === 'doctor';
+  useEffect(() => {
+    const r = typeof window !== 'undefined' ? localStorage.getItem('role') : null;
+    setRole(r);
+  }, []);
   const [reports, setReports] = useState<Report[]>([
     {
       id: "1",
@@ -107,6 +114,18 @@ export default function ReportsPage() {
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
       const file = event.target.files[0];
+      // Validate file type (PDF or image) and size (<=5MB)
+      const isPdf = file.type === 'application/pdf';
+      const isImage = file.type.startsWith('image/');
+      const withinSize = file.size <= 5 * 1024 * 1024;
+      if (!isPdf && !isImage) {
+        setSnackbar({ open: true, message: 'Only PDF or image files are allowed', severity: 'error' });
+        return;
+      }
+      if (!withinSize) {
+        setSnackbar({ open: true, message: 'File must be 5MB or smaller', severity: 'error' });
+        return;
+      }
       setSelectedFile(file);
       // Auto-fill report name with filename (without extension)
       const nameWithoutExt = file.name.replace(/\.[^/.]+$/, "");
@@ -184,6 +203,7 @@ export default function ReportsPage() {
   };
 
   return (
+    <RequireAuth allowedRoles={["doctor", "patient"]}>
     <Box sx={{ 
       backgroundColor: '#F5F9F8', 
       minHeight: '100vh',
@@ -214,21 +234,23 @@ export default function ReportsPage() {
             Upload and manage your diagnostic reports
           </Typography>
         </Box>
-        <Button
-          variant="contained"
-          startIcon={<CloudUpload />}
-          onClick={() => setUploadDialogOpen(true)}
-          sx={{
-            bgcolor: '#2A7F62',
-            '&:hover': { bgcolor: '#1E6D54' },
-            px: 3,
-            py: 1.5,
-            textTransform: 'none',
-            fontWeight: 600
-          }}
-        >
-          Upload New Report
-        </Button>
+        {!isDoctor && (
+          <Button
+            variant="contained"
+            startIcon={<CloudUpload />}
+            onClick={() => setUploadDialogOpen(true)}
+            sx={{
+              bgcolor: '#2A7F62',
+              '&:hover': { bgcolor: '#1E6D54' },
+              px: 3,
+              py: 1.5,
+              textTransform: 'none',
+              fontWeight: 600
+            }}
+          >
+            Upload New Report
+          </Button>
+        )}
       </Box>
 
       {/* Stats Cards */}
@@ -415,16 +437,18 @@ export default function ReportsPage() {
                           >
                             <Download fontSize="small" />
                           </IconButton>
-                          <IconButton
-                            size="small"
-                            onClick={() => handleDelete(report.id)}
-                            sx={{ 
-                              color: '#D32F2F',
-                              '&:hover': { bgcolor: '#FFEBEE' }
-                            }}
-                          >
-                            <Delete fontSize="small" />
-                          </IconButton>
+                          {!isDoctor && (
+                            <IconButton
+                              size="small"
+                              onClick={() => handleDelete(report.id)}
+                              sx={{ 
+                                color: '#D32F2F',
+                                '&:hover': { bgcolor: '#FFEBEE' }
+                              }}
+                            >
+                              <Delete fontSize="small" />
+                            </IconButton>
+                          )}
                         </Box>
                       </TableCell>
                     </TableRow>
@@ -438,7 +462,7 @@ export default function ReportsPage() {
 
       {/* Upload Dialog */}
       <Dialog 
-        open={uploadDialogOpen} 
+        open={uploadDialogOpen && !isDoctor} 
         onClose={() => setUploadDialogOpen(false)}
         maxWidth="sm"
         fullWidth
@@ -516,16 +540,18 @@ export default function ReportsPage() {
           >
             Cancel
           </Button>
-          <Button 
-            onClick={handleUpload}
-            variant="contained"
+          {!isDoctor && (
+            <Button 
+              onClick={handleUpload}
+              variant="contained"
             sx={{
               bgcolor: '#2A7F62',
               '&:hover': { bgcolor: '#1E6D54' }
             }}
-          >
-            Upload
-          </Button>
+            >
+              Upload
+            </Button>
+          )}
         </DialogActions>
       </Dialog>
 
@@ -545,5 +571,6 @@ export default function ReportsPage() {
         </Alert>
       </Snackbar>
     </Box>
+    </RequireAuth>
   );
 }

@@ -501,7 +501,7 @@ const ProfileView = () => {
                     <Box sx={{ bgcolor: 'white', p: 1.5, borderRadius: 2, boxShadow: 1 }}>
                       <QRCodeSVG
                         value={JSON.stringify({
-                          id: userData.id || userData.phone,
+                          id: userData.patientId,
                           name: userData.fullName,
                           dob: userData.dateOfBirth,
                           bloodGroup: userData.bloodGroup,
@@ -689,11 +689,7 @@ const ProfileView = () => {
                         {userData.specialization?.[0] || 'Medical Specialist'}
                       </Typography>
                     </Box>
-                    <Box sx={{ mt: 0.5 }}>
-                      <Typography sx={{ fontSize: '0.85rem', color: '#1a1a1a', fontWeight: 600 }}>
-                        MEDIPAL ID NO : {userData.id || userData.licenseNumber || '123-456-7890'}
-                      </Typography>
-                    </Box>
+                    {/* Removed medipalId display as part of revert */}
                   </Box>
 
                   {/* Right: QR Code */}
@@ -701,7 +697,7 @@ const ProfileView = () => {
                     <Box sx={{ bgcolor: 'white', p: 1.5, borderRadius: 2, boxShadow: 1 }}>
                       <QRCodeSVG
                         value={JSON.stringify({
-                          id: userData.id || userData.licenseNumber,
+                          id: userData.licenseNumber,
                           name: userData.fullName,
                           license: userData.licenseNumber,
                           specialization: userData.specialization?.[0],

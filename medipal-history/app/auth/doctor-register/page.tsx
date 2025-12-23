@@ -770,7 +770,7 @@ export default function DoctorRegisterPage() {
                       <TextField
                         fullWidth
                         name="licenseNumber"
-                        label="Medical License Number"
+                        label="License Number"
                         value={formData.licenseNumber}
                         onChange={handleChange}
                         error={!!errors.licenseNumber}

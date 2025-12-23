@@ -1,12 +1,14 @@
 // src/controllers/doctor.controller.ts
 import { Request, Response } from 'express';
 import Doctor, { IDoctor } from '../models/doctor.model';
+import Patient from '../models/patient.model';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import upload from '../config/multer';
 import path from 'path';
 import fs from 'fs';
 import dotenv from 'dotenv';
+import Consultation from '../models/consultation.model';
 
 dotenv.config();
 
@@ -26,8 +28,12 @@ export const registerDoctor = async (req: Request, res: Response) => {
       return res.status(400).json({ success: false, message: 'Email already exists' });
     }
 
-    // Check if license number already exists
-    const existingLicense = await Doctor.findOne({ licenseNumber: req.body.licenseNumber });
+    // Use licenseNumber (reverting from NMC)
+    const licenseNumberInput = req.body.licenseNumber;
+    if (!licenseNumberInput) {
+      return res.status(400).json({ success: false, message: 'License number is required' });
+    }
+    const existingLicense = await Doctor.findOne({ licenseNumber: licenseNumberInput });
     if (existingLicense) {
       return res.status(400).json({ success: false, message: 'License number already exists' });
     }
@@ -61,7 +67,7 @@ export const registerDoctor = async (req: Request, res: Response) => {
       phone: req.body.phone,
       gender: req.body.gender,
       dateOfBirth: new Date(req.body.dateOfBirth),
-      licenseNumber: req.body.licenseNumber,
+      licenseNumber: licenseNumberInput,
       specialization: parseArrayField(req.body.specialization),
       yearsOfExperience: parseInt(req.body.yearsOfExperience),
       hospital: req.body.hospital,
@@ -297,7 +303,7 @@ export const getDoctorProfile = async (req: Request, res: Response) => {
       phone: doctor.phone,
       gender: doctor.gender,
       dateOfBirth: doctor.dateOfBirth,
-      licenseNumber: doctor.licenseNumber,
+      licenseNumber: (doctor as any).licenseNumber,
       specialization: doctor.specialization || [],
       yearsOfExperience: doctor.yearsOfExperience,
       hospital: doctor.hospital,
@@ -441,5 +447,120 @@ export const searchDoctors = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error searching doctors:', error);
     return res.status(500).json({ success: false, message: 'Failed to search doctors' });
+  }
+};
+
+// Search patient by MediPal Patient ID (e.g., MP-03YYYYMMDD)
+export const searchPatientByPatientId = async (req: Request, res: Response) => {
+  try {
+    const { patientId } = req.params as { patientId: string };
+    if (!patientId) {
+      return res.status(400).json({ success: false, message: 'Patient ID is required' });
+    }
+
+    // Normalize input: remove spaces, allow optional '-'
+    const raw = String(patientId).replace(/\s+/g, '');
+    const match = raw.match(/^MP-?(\d+)(\d{8})$/);
+    if (!match) {
+      return res.status(400).json({ success: false, message: 'Invalid Patient ID format. Use MP-<patientNo><YYYYMMDD>' });
+    }
+
+    const patientNoStr = match[1];
+    const dobStr = match[2]; // YYYYMMDD
+    const year = parseInt(dobStr.slice(0, 4), 10);
+    const month = parseInt(dobStr.slice(4, 6), 10) - 1; // 0-based
+    const day = parseInt(dobStr.slice(6, 8), 10);
+
+    const dobStart = new Date(Date.UTC(year, month, day, 0, 0, 0));
+    const dobEnd = new Date(Date.UTC(year, month, day, 23, 59, 59, 999));
+
+    const patientNumber = parseInt(patientNoStr, 10);
+    const patient = await Patient.findOne({
+      patientNumber,
+      dateOfBirth: { $gte: dobStart, $lte: dobEnd }
+    }).select('-password');
+
+    if (!patient) {
+      return res.status(404).json({ success: false, message: 'Patient not found' });
+    }
+
+    // Compute display patientId from sequential number and DOB
+    const computedPatientId = `MP-${String(patient.patientNumber).padStart(2, '0')}${dobStr}`;
+
+    const data = {
+      id: patient._id,
+      patientId: computedPatientId,
+      fullName: patient.fullName,
+      dateOfBirth: patient.dateOfBirth,
+      gender: patient.gender,
+      phoneNumber: patient.phone,
+      email: patient.email,
+      address: patient.address,
+      bloodGroup: patient.bloodGroup,
+      emergencyContact: patient.emergencyContactPhone
+    };
+
+    return res.json({ success: true, data });
+  } catch (error) {
+    console.error('Error searching patient by Patient ID:', error);
+    return res.status(500).json({ success: false, message: 'Failed to search patient' });
+  }
+};
+
+// List consultations for the logged-in doctor, optional patient filter
+export const listDoctorConsultations = async (req: Request, res: Response) => {
+  try {
+    const user = req.user;
+    if (!user?.id || user.role !== 'doctor') {
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+
+    let patientFilter: any = {};
+    const rawPatientId = (req.query.patientId as string) || '';
+    if (rawPatientId) {
+      const raw = rawPatientId.replace(/\s+/g, '');
+      const seqMatch = raw.match(/^MP-?(\d+)(\d{8})$/);
+      if (seqMatch) {
+        const patientNumber = parseInt(seqMatch[1], 10);
+        const dobStr = seqMatch[2];
+        const year = parseInt(dobStr.slice(0, 4), 10);
+        const month = parseInt(dobStr.slice(4, 6), 10) - 1;
+        const day = parseInt(dobStr.slice(6, 8), 10);
+        const dobStart = new Date(Date.UTC(year, month, day, 0, 0, 0));
+        const dobEnd = new Date(Date.UTC(year, month, day, 23, 59, 59, 999));
+        const patient = await Patient.findOne({ patientNumber, dateOfBirth: { $gte: dobStart, $lte: dobEnd } }).select('_id');
+        if (!patient) return res.json({ success: true, data: [], count: 0 });
+        patientFilter.patientId = patient._id;
+      } else if (/^[0-9a-fA-F]{24}$/.test(raw)) {
+        patientFilter.patientId = raw;
+      }
+    }
+
+    const docs = await Consultation.find({ doctorId: user.id, ...patientFilter })
+      .sort({ date: -1, createdAt: -1 })
+      .lean();
+
+    // Resolve patient names for display
+    const patientIds = Array.from(new Set(docs.map(d => String(d.patientId))));
+    const pats = await Patient.find({ _id: { $in: patientIds } }).select('fullName');
+    const nameMap = new Map(pats.map(p => [String(p._id), p.fullName]));
+
+    const data = docs.map(d => ({
+      id: String(d._id),
+      date: d.date,
+      patientId: String(d.patientId),
+      patientName: nameMap.get(String(d.patientId)) || 'Unknown',
+      hospitalName: d.hospital || '',
+      chiefComplaint: '',
+      diagnosis: d.diagnosis || '',
+      prescription: d.prescriptions || [],
+      notes: d.notes || '',
+      followUpRequired: !!d.followUpRequired,
+    }));
+
+    return res.json({ success: true, data, count: data.length });
+  } catch (error) {
+    console.error('Error listing doctor consultations:', error);
+    return res.status(500).json({ success: false, message: 'Failed to fetch consultations' });
   }
 };
