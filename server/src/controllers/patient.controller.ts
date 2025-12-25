@@ -10,14 +10,10 @@ const handleFileUpload = (req: Request, fieldName: string) => {
   if (!req.files) return undefined;
   
   const files = req.files as { [fieldname: string]: Express.Multer.File[] };
-  // For Cloudinary, use 'path' which contains the full URL
   return files[fieldName]?.[0]?.path || files[fieldName]?.[0]?.filename;
 };
 
 const cleanupFiles = (files: string[]) => {
-  // Note: Cloudinary handles file cleanup automatically
-  // If you need to delete from Cloudinary on error, implement cloudinary.uploader.destroy()
-  // For now, files remain in cloud storage even on registration errors
   console.log('Files uploaded to Cloudinary:', files);
 };
 
@@ -200,7 +196,6 @@ export const getPatientProfile = async (req: Request, res: Response) => {
       return res.status(404).json({ success: false, message: 'Patient not found' });
     }
 
-    // If patientNumber doesn't exist (for old records), assign one and save
     if (!patient.patientNumber) {
       const patientCount = await Patient.countDocuments();
       patient.patientNumber = patientCount;

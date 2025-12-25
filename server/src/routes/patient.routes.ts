@@ -61,7 +61,4 @@ router.get('/dashboard', authenticate, (req, res) => {
 // Patient: list own consultations
 router.get('/consultations', authenticate, getPatientConsultations);
 
-// Consent management (patient only)
-// Consent/QR routes removed as part of revert
-
 export default router;
