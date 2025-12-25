@@ -352,7 +352,7 @@ export default function DoctorRegisterPage() {
           });
           
           setTimeout(() => {
-            router.push('/dashboard');
+            router.push('/doctor/dashboard');
           }, 2000);
         } catch (error: any) {
           setSnackbar({
@@ -808,22 +808,26 @@ export default function DoctorRegisterPage() {
                             />
                           )}
                           renderTags={(value, getTagProps) =>
-                            value.map((option, index) => (
-                              <Chip
-                                {...getTagProps({ index })}
-                                label={option}
-                                sx={{
-                                  borderRadius: '8px',
-                                  backgroundColor: '#E8F5E9',
-                                  color: '#1B5E20',
-                                  fontWeight: 500,
-                                  marginRight: '6px',
-                                  '& .MuiChip-deleteIcon': {
-                                    color: '#2A7F62'
-                                  }
-                                }}
-                              />
-                            ))
+                            value.map((option, index) => {
+                              const { key, ...tagProps } = getTagProps({ index });
+                              return (
+                                <Chip
+                                  key={key}
+                                  {...tagProps}
+                                  label={option}
+                                  sx={{
+                                    borderRadius: '8px',
+                                    backgroundColor: '#E8F5E9',
+                                    color: '#1B5E20',
+                                    fontWeight: 500,
+                                    marginRight: '6px',
+                                    '& .MuiChip-deleteIcon': {
+                                      color: '#2A7F62'
+                                    }
+                                  }}
+                                />
+                              );
+                            })
                           }
                         />
                       </FormControl>
@@ -922,22 +926,26 @@ export default function DoctorRegisterPage() {
                             />
                           )}
                           renderTags={(value, getTagProps) =>
-                            value.map((option, index) => (
-                              <Chip
-                                {...getTagProps({ index })}
-                                label={option}
-                                sx={{
-                                  borderRadius: '8px',
-                                  backgroundColor: '#E3F2FD',
-                                  color: '#1565C0',
-                                  fontWeight: 500,
-                                  marginRight: '6px',
-                                  '& .MuiChip-deleteIcon': {
-                                    color: '#1976D2'
-                                  }
-                                }}
-                              />
-                            ))
+                            value.map((option, index) => {
+                              const { key, ...tagProps } = getTagProps({ index });
+                              return (
+                                <Chip
+                                  key={key}
+                                  {...tagProps}
+                                  label={option}
+                                  sx={{
+                                    borderRadius: '8px',
+                                    backgroundColor: '#E3F2FD',
+                                    color: '#1565C0',
+                                    fontWeight: 500,
+                                    marginRight: '6px',
+                                    '& .MuiChip-deleteIcon': {
+                                      color: '#1976D2'
+                                    }
+                                  }}
+                                />
+                              );
+                            })
                           }
                         />
                       </FormControl>
@@ -964,22 +972,26 @@ export default function DoctorRegisterPage() {
                             />
                           )}
                           renderTags={(value, getTagProps) =>
-                            value.map((option, index) => (
-                              <Chip
-                                {...getTagProps({ index })}
-                                label={option}
-                                sx={{
-                                  borderRadius: '8px',
-                                  backgroundColor: '#E8F5E9',
-                                  color: '#2E7D32',
-                                  fontWeight: 500,
-                                  marginRight: '6px',
-                                  '& .MuiChip-deleteIcon': {
-                                    color: '#388E3C'
-                                  }
-                                }}
-                              />
-                            ))
+                            value.map((option, index) => {
+                              const { key, ...tagProps } = getTagProps({ index });
+                              return (
+                                <Chip
+                                  key={key}
+                                  {...tagProps}
+                                  label={option}
+                                  sx={{
+                                    borderRadius: '8px',
+                                    backgroundColor: '#E8F5E9',
+                                    color: '#2E7D32',
+                                    fontWeight: 500,
+                                    marginRight: '6px',
+                                    '& .MuiChip-deleteIcon': {
+                                      color: '#388E3C'
+                                    }
+                                  }}
+                                />
+                              );
+                            })
                           }
                         />
                       </FormControl>

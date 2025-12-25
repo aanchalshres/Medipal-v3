@@ -241,7 +241,7 @@ export default function PatientRegisterPage() {
           
           // Redirect after a short delay
           setTimeout(() => {
-            router.push('/dashboard');
+            router.push('/patient/dashboard');
           }, 2000);
         } catch (error: any) {
           setSnackbar({

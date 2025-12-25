@@ -12,6 +12,7 @@ import authRoutes from './routes/auth.routes';
 import appointmentRoutes from './routes/appointment.routes';
 import downloadRoutes from './routes/downloadRoutes';
 import { notFound, errorHandler } from './utils/errorHandler';
+import Doctor from './models/doctor.model';
 
 // 1. Load env variables
 dotenv.config();
@@ -60,8 +61,25 @@ app.use(errorHandler);
 const PORT = process.env.PORT || 5000;
 
 mongoose.connect(process.env.MONGO_URI as string)
-  .then(() => {
+  .then(async () => {
     console.log('✅ MongoDB connected');
+
+    try {
+      // Ensure schema-defined indexes are in sync (email, licenseNumber, etc.)
+      await Doctor.syncIndexes();
+
+      // Drop obsolete unique index on nmcNumber if it exists from older schema
+      const collection = mongoose.connection.collection('doctors');
+      const indexes = await collection.indexes();
+      const hasOldIndex = indexes.some((idx) => idx.name === 'nmcNumber_1');
+      if (hasOldIndex) {
+        await collection.dropIndex('nmcNumber_1');
+        console.log('🧹 Dropped obsolete index nmcNumber_1 on doctors collection');
+      }
+    } catch (idxErr) {
+      console.warn('⚠️ Index sync/cleanup warning:', (idxErr as Error).message);
+    }
+
     app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`☁️  File storage: Cloudinary (${process.env.CLOUDINARY_CLOUD_NAME || 'not configured'})`);
