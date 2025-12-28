@@ -6,6 +6,7 @@ export interface IConsultation extends Document {
   date: Date;
   diagnosis?: string;
   notes?: string;
+  chiefComplaint?: string;
   prescriptions?: string[];
   hospital?: string;
   followUpRequired?: boolean;
@@ -19,6 +20,7 @@ const ConsultationSchema = new Schema<IConsultation>({
   date: { type: Date, required: true },
   diagnosis: { type: String },
   notes: { type: String },
+  chiefComplaint: { type: String },
   prescriptions: { type: [String], default: [] },
   hospital: { type: String },
   followUpRequired: { type: Boolean, default: false },

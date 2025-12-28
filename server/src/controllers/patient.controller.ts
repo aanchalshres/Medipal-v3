@@ -183,7 +183,6 @@ export const registerPatient = async (req: Request, res: Response) => {
   }
 };
 
-// Get logged-in patient profile with frontend-friendly shape
 export const getPatientProfile = async (req: Request, res: Response) => {
   try {
     const user = req.user;

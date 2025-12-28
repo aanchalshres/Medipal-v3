@@ -542,21 +542,39 @@ export const listDoctorConsultations = async (req: Request, res: Response) => {
 
     // Resolve patient names for display
     const patientIds = Array.from(new Set(docs.map(d => String(d.patientId))));
-    const pats = await Patient.find({ _id: { $in: patientIds } }).select('fullName');
-    const nameMap = new Map(pats.map(p => [String(p._id), p.fullName]));
+    const pats = await Patient.find({ _id: { $in: patientIds } }).select('fullName patientNumber dateOfBirth');
+    const patientInfoMap = new Map(pats.map(p => [
+      String(p._id),
+      {
+        fullName: p.fullName,
+        patientNumber: p.patientNumber,
+        dateOfBirth: p.dateOfBirth
+      }
+    ]));
 
-    const data = docs.map(d => ({
-      id: String(d._id),
-      date: d.date,
-      patientId: String(d.patientId),
-      patientName: nameMap.get(String(d.patientId)) || 'Unknown',
-      hospitalName: d.hospital || '',
-      chiefComplaint: '',
-      diagnosis: d.diagnosis || '',
-      prescription: d.prescriptions || [],
-      notes: d.notes || '',
-      followUpRequired: !!d.followUpRequired,
-    }));
+    const data = docs.map(d => {
+      const info = patientInfoMap.get(String(d.patientId));
+      let mpId = String(d.patientId);
+      if (info && info.patientNumber && info.dateOfBirth) {
+        const dob = new Date(info.dateOfBirth);
+        const yyyy = dob.getUTCFullYear();
+        const mm = String(dob.getUTCMonth() + 1).padStart(2, '0');
+        const dd = String(dob.getUTCDate()).padStart(2, '0');
+        mpId = `MP-${String(info.patientNumber).padStart(2, '0')}${yyyy}${mm}${dd}`;
+      }
+      return {
+        id: String(d._id),
+        date: d.date,
+        patientId: mpId,
+        patientName: info ? info.fullName : 'Unknown',
+        hospitalName: d.hospital || '',
+        chiefComplaint: d.chiefComplaint || '',
+        diagnosis: d.diagnosis || '',
+        prescription: d.prescriptions || [],
+        notes: d.notes || '',
+        followUpRequired: !!d.followUpRequired,
+      };
+    });
 
     return res.json({ success: true, data, count: data.length });
   } catch (error) {
