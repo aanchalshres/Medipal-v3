@@ -170,6 +170,7 @@ export default function ConsultationsPage() {
           date: new Date().toISOString(),
           diagnosis: newConsultation.diagnosis,
           notes: newConsultation.notes,
+          chiefComplaint: newConsultation.chiefComplaint,
           prescriptions: newConsultation.prescription.split("\n").filter((p) => p.trim()),
           hospital: newConsultation.hospitalName,
           followUpRequired: newConsultation.followUpRequired,
