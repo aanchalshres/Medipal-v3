@@ -57,9 +57,6 @@ CLOUDINARY_API_SECRET=your_api_secret
 
 ### Patient ID System
 Every patient gets a unique ID: `MP-01YYYYMMDD`
-- MP = MediPal
-- 01 = Patient number
-- YYYYMMDD = Date of birth
 
 ### Appointment System
 - Real-time booking
@@ -71,4 +68,4 @@ Every patient gets a unique ID: `MP-01YYYYMMDD`
 Need help? Open an issue or reach out to the team!
 
 ---
-*A student project for healthcare management* 💙
+*A group project for healthcare management* 💙
